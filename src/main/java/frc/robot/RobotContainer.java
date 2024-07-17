@@ -28,8 +28,8 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 //import edu.wpi.first.wpilibj2.command.InstantCommand;
 //import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
+//import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.ctre.phoenix6.hardware.TalonFX;
 //import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 //import com.revrobotics.CANSparkMax;
 //import com.revrobotics.CANSparkLowLevel.MotorType;
@@ -179,19 +179,19 @@ public class RobotContainer {
 
 	private final Drawer drawer = new Drawer(drawer_master);*/
 
-	private final WPI_TalonFX elevator_master = new WPI_TalonFX(Ports.CAN.ELEVATOR_MASTER);
-	private final WPI_TalonFX elevator_follower = new WPI_TalonFX(Ports.CAN.ELEVATOR_FOLLOWER);
+	private final TalonFX elevator_master = new TalonFX(Ports.CAN.ELEVATOR_MASTER);
+	private final TalonFX elevator_follower = new TalonFX(Ports.CAN.ELEVATOR_FOLLOWER);
 
 	private final /*I*/Elevator elevator = new Elevator(elevator_master, elevator_follower);
 
-	private final WPI_TalonFX neck_master = new WPI_TalonFX(Ports.CAN.NECK_MASTER);
-	private final WPI_TalonFX neck_follower = new WPI_TalonFX(Ports.CAN.NECK_FOLLOWER);
+	private final TalonFX neck_master = new TalonFX(Ports.CAN.NECK_MASTER);
+	private final TalonFX neck_follower = new TalonFX(Ports.CAN.NECK_FOLLOWER);
 	
 	private final /*I*/Neck neck = new Neck(neck_master, neck_follower);
 
 	//private final CANSparkMax roller_master = new CANSparkMax(Ports.CAN.ROLLER, MotorType.kBrushless);
-	private final WPI_TalonSRX roller_master = new WPI_TalonSRX(Ports.CAN.ROLLER_MASTER);
-	private final WPI_TalonSRX roller_follower = new WPI_TalonSRX(Ports.CAN.ROLLER_FOLLOWER);
+	private final TalonFX roller_master = new TalonFX(Ports.CAN.ROLLER_MASTER);
+	private final TalonFX roller_follower = new TalonFX(Ports.CAN.ROLLER_FOLLOWER);
 
 	private final /*I*/Roller roller = new Roller(roller_master, roller_follower);
 
@@ -200,7 +200,7 @@ public class RobotContainer {
 
 	//private final /*I*/SimpleShooter shooter = new SimpleShooter(shooter_master, shooter_follower);
 
-	private final WPI_TalonFX shooter_master = new WPI_TalonFX(Ports.CAN.SHOOTER_MASTER);
+	private final TalonFX shooter_master = new TalonFX(Ports.CAN.SHOOTER_MASTER);
 	
 	private final /*I*/Shooter shooter = new Shooter(shooter_master);
 

@@ -6,25 +6,32 @@ package frc.robot.subsystems;
 //import java.util.Timer;
 //import java.util.TimerTask;
 
-import com.ctre.phoenix.motorcontrol.FeedbackDevice;
-import com.ctre.phoenix.motorcontrol.LimitSwitchNormal;
-import com.ctre.phoenix.motorcontrol.LimitSwitchSource;
-import com.ctre.phoenix.ParamEnum;
-import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix6.configs.FeedbackConfigs;
+import com.ctre.phoenix6.configs.HardwareLimitSwitchConfigs;
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.controls.PositionDutyCycle;
+import com.ctre.phoenix6.controls.PositionVoltage;
+/*import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
-//import com.ctre.phoenix.motorcontrol.StatusFrame;
-//import com.ctre.phoenix.motorcontrol.can.BaseMotorController;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.ctre.phoenix.motorcontrol.StatusFrame;*/
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.ForwardLimitSourceValue;
+import com.ctre.phoenix6.signals.ForwardLimitTypeValue;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.ReverseLimitSourceValue;
+import com.ctre.phoenix6.signals.ReverseLimitTypeValue;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
 import frc.robot.interfaces.*;
-//import frc.robot.Ports;
 import frc.robot.RobotContainer;
-
+//import frc.robot.Ports;
 
 /**
  * The {@code Drawer} class contains fields and methods pertaining to the function of the drawer.
@@ -61,7 +68,7 @@ public class Drawer extends SubsystemBase implements IDrawer {
 
 	private final static int MOVE_STALLED_MINIMUM_COUNT = MOVE_ON_TARGET_MINIMUM_COUNT * 2 + 30; // number of times/iterations we need to be stalled to really be stalled
 
-	WPI_TalonSRX drawer; 
+	TalonFX drawer; 
 	//BaseMotorController drawer_follower;
 	
 	boolean isMoving;
@@ -74,36 +81,52 @@ public class Drawer extends SubsystemBase implements IDrawer {
 	private int stalledCount; // counter indicating how many times/iterations we were stalled
 	
 	
-	public Drawer(WPI_TalonSRX drawer_in/*, BaseMotorController drawer_follower_in*/) {
+	public Drawer(TalonFX drawer_in/*, BaseMotorController drawer_follower_in*/) {
 		
 		drawer = drawer_in;
 		//drawer_follower = drawer_follower_in;
 
-		drawer.configFactoryDefault();
+		drawer.getConfigurator().apply(new TalonFXConfiguration());
 		//drawer_follower.configFactoryDefault();
 		
 		// Mode of operation during Neutral output may be set by using the setNeutralMode() function.
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.
-		drawer.setNeutralMode(NeutralMode.Brake);
+		TalonFXConfiguration drawer = new TalonFXConfiguration();
+		//drawer.setNeutralMode(NeutralMode.Brake);
+		drawer.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+		
 		//drawer_follower.setNeutralMode(NeutralMode.Brake);
 				
 		// Sensor phase is the term used to explain sensor direction.
 		// In order for limit switches and closed-loop features to function properly the sensor and motor has to be in-phase.
 		// This means that the sensor position must move in a positive direction as the motor controller drives positive output.
 		
-		drawer.setSensorPhase(false); // false for SRX // TODO switch to true if required if switching to Talon FX
+		//drawer.setSensorPhase(false); // false for SRX // TODO switch to true if required if switching to Talon FX
+		// When using a remote sensor, you can invert the remote sensor to bring it in phase with the Talon FX.
 		
-		//Enable limit switches
-		drawer.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
-		drawer.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
+		//Enable forward limit switches
+		drawer.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteTalonFX;
+        drawer.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
+        drawer.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
+        drawer.HardwareLimitSwitch.ForwardLimitEnable = true;
+		//drawer.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
+		
+		//Enable reverse limit switches
+		drawer.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteTalonFX;
+        drawer.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
+        drawer.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
+        drawer.HardwareLimitSwitch.ReverseLimitEnable = true;
+		//drawer.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		drawer.overrideLimitSwitchesEnable(true);
 	
 		// Motor controller output direction can be set by calling the setInverted() function as seen below.
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
 		// Only the motor leads are inverted. This feature ensures that sensor phase and limit switches will properly match the LED pattern
 		// (when LEDs are green => forward limit switch and soft limits are being checked).
-		drawer.setInverted(false);  // TODO switch to false if required if switching to Talon FX
+		drawer.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
+
+		//drawer.setInverted(false);  // TODO switch to false if required if switching to Talon FX
 		//drawer_follower.setInverted(true);  // TODO comment out if switching to Talon FX
 		
 		// Both the Talon SRX and Victor SPX have a follower feature that allows the motor controllers to mimic another motor controller's output.
@@ -133,8 +156,8 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		// This ensures the best resolution possible when performing closed-loops in firmware.
 		// CTRE Magnetic Encoder (relative/quadrature) =  4096 units per rotation		
 		// FX Integrated Sensor = 2048 units per rotation
-		drawer.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // .CTRE_MagEncoder_Relative for SRX // TODO switch to FeedbackDevice.IntegratedSensor if switching to Talon FX
-		
+		//drawer.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // .CTRE_MagEncoder_Relative for SRX // TODO switch to FeedbackDevice.IntegratedSensor if switching to Talon FX
+		drawer.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor;
 		// this will reset the encoder automatically when at or past the forward limit sensor
 		drawer.configSetParameter(ParamEnum.eClearPositionOnLimitF, 1, 0, 0, TALON_TIMEOUT_MS);
 		drawer.configSetParameter(ParamEnum.eClearPositionOnLimitR, 0, 0, 0, TALON_TIMEOUT_MS);
@@ -221,7 +244,8 @@ public class Drawer extends SubsystemBase implements IDrawer {
 	}
 
 	public int getEncoderVelocity() {
-		return (int) (drawer.getSelectedSensorVelocity(PRIMARY_PID_LOOP));
+		//return (int) (drawer.getSelectedSensorVelocity(PRIMARY_PID_LOOP));
+		return (int) drawer.getVelocity().getValueAsDouble();
 	}
 	
 	public void extend() {
@@ -232,7 +256,8 @@ public class Drawer extends SubsystemBase implements IDrawer {
 
 		tac = -LENGTH_OF_TRAVEL_TICKS;
 		
-		drawer.set(ControlMode.Position,tac);
+		//drawer.set(ControlMode.Position,tac);
+		drawer.setControl(PositionVoltage, tac); //TODO fix
 		
 		isMoving = true;
 		isExtending = true;
@@ -249,7 +274,8 @@ public class Drawer extends SubsystemBase implements IDrawer {
 
 		tac = -LENGTH_OF_MIDWAY_TICKS;
 		
-		drawer.set(ControlMode.Position,tac);
+		//drawer.set(ControlMode.Position,tac);
+		drawer.setControl(PositionVoltage, tac);
 		
 		isMoving = true;
 		isExtending = true;
@@ -265,7 +291,8 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
 
 		tac = 0; // adjust as needed
-		drawer.set(ControlMode.Position,tac);
+		//drawer.set(ControlMode.Position,tac);
+		drawer.setControl(PositionVoltage, tac);
 		
 		isMoving = true;
 		isExtending = false;
@@ -275,7 +302,8 @@ public class Drawer extends SubsystemBase implements IDrawer {
 	}
 
 	public double getEncoderPosition() {
-		return drawer.getSelectedSensorPosition(PRIMARY_PID_LOOP);
+		//return drawer.getSelectedSensorPosition(PRIMARY_PID_LOOP);
+		return drawer.getPosition().getValueAsDouble();
 	}
 	
 	public void stay() {	 		
@@ -284,7 +312,8 @@ public class Drawer extends SubsystemBase implements IDrawer {
 	}
 
 	public synchronized void stop() {
-		drawer.set(ControlMode.PercentOutput, 0);
+		//drawer.set(ControlMode.PercentOutput, 0);
+		drawer.setControl(DutyCycleOut, 0);
 		
 		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
 		
@@ -293,7 +322,7 @@ public class Drawer extends SubsystemBase implements IDrawer {
 	}
 	
 	private void setPIDParameters() {		
-		drawer.configAllowableClosedloopError(SLOT_0, TALON_TICK_THRESH, TALON_TIMEOUT_MS);
+		//drawer.configAllowableClosedloopError(SLOT_0, TALON_TICK_THRESH, TALON_TIMEOUT_MS);
 		
 		// P is the proportional gain. It modifies the closed-loop output by a proportion (the gain value)
 		// of the closed-loop error.
@@ -319,11 +348,23 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		// The result of this multiplication is in motor output units [-1023, 1023]. This allows the robot to feed-forward using the target set-point.
 		// In order to calculate feed-forward, you will need to measure your motor's velocity at a specified percent output
 		// (preferably an output close to the intended operating range).
+
+		var talonFXConfigs = new TalonFXConfiguration();
+
+		// set slot 0 gains and leave every other config factory-default
+		var slot0Configs = talonFXConfigs.Slot0;
+		slot0Configs.kV = 0;
+		slot0Configs.kP = MOVE_PROPORTIONAL_GAIN;
+		slot0Configs.kI = MOVE_INTEGRAL_GAIN;
+		slot0Configs.kD = MOVE_DERIVATIVE_GAIN;
+
+		// apply all configs, 20 ms total timeout
+		drawer.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
 		
-		drawer.config_kP(SLOT_0, MOVE_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
+		/*drawer.config_kP(SLOT_0, MOVE_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
 		drawer.config_kI(SLOT_0, MOVE_INTEGRAL_GAIN, TALON_TIMEOUT_MS);
 		drawer.config_kD(SLOT_0, MOVE_DERIVATIVE_GAIN, TALON_TIMEOUT_MS);
-		drawer.config_kF(SLOT_0, 0, TALON_TIMEOUT_MS);
+		drawer.config_kF(SLOT_0, 0, TALON_TIMEOUT_MS);*/
 	}
 	
 	// NOTE THAT THIS METHOD WILL IMPACT BOTH OPEN AND CLOSED LOOP MODES
@@ -370,7 +411,8 @@ public class Drawer extends SubsystemBase implements IDrawer {
 	{
 		if (!isMoving) // if we are already doing a move we don't take over
 		{
-			drawer.set(ControlMode.PercentOutput, +joystick.getY()); // adjust sign if desired
+			//drawer.set(ControlMode.PercentOutput, +joystick.getY()); // adjust sign if desired
+			drawer.setControl(DutyCycleOut, +joystick.getY());
 		}
 	}
 
@@ -378,7 +420,8 @@ public class Drawer extends SubsystemBase implements IDrawer {
 	{
 		if (!isMoving) // if we are already doing a move we don't take over
 		{
-			drawer.set(ControlMode.PercentOutput, -MathUtil.applyDeadband(gamepad.getRightX(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*0.6/*0.7*/); // adjust sign if desired
+			//drawer.set(ControlMode.PercentOutput, -MathUtil.applyDeadband(gamepad.getRightX(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*0.6/*0.7*/); // adjust sign if desired
+			drawer.setControl(DutyCycleOut, -MathUtil.applyDeadband(gamepad.getRightX(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*0.6/*0.7*/);
 		}
 	}
 
@@ -397,7 +440,8 @@ public class Drawer extends SubsystemBase implements IDrawer {
 	// MAKE SURE THAT YOU ARE NOT IN A CLOSED LOOP CONTROL MODE BEFORE CALLING THIS METHOD.
 	// OTHERWISE THIS IS EQUIVALENT TO MOVING TO THE DISTANCE TO THE CURRENT ZERO IN REVERSE! 
 	public void resetEncoder() {
-		drawer.set(ControlMode.PercentOutput,0); // we stop AND MAKE SURE WE DO NOT MOVE WHEN SETTING POSITION
+		//drawer.set(ControlMode.PercentOutput,0); // we stop AND MAKE SURE WE DO NOT MOVE WHEN SETTING POSITION
+		drawer.setControl(DutyCycleOut, 0);
 		drawer.setSelectedSensorPosition(0, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // we mark the virtual zero
 	}
 

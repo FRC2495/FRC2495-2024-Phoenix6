@@ -3,10 +3,11 @@
  */
 package frc.robot.subsystems;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.ctre.phoenix.motorcontrol.FeedbackDevice;
-import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.can.BaseMotorController;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -35,7 +36,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 
 	static final int TALON_TIMEOUT_MS = 20;
 	
-	BaseMotorController shooterMaster; 
+	TalonFX shooterMaster; 
 		
 	boolean isShooting;
 	
@@ -61,16 +62,18 @@ public class Shooter extends SubsystemBase implements IShooter{
 	static final int FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION = 2048; // units per rotation
 	
 	
-	public Shooter(BaseMotorController shooterMaster_in) {
+	public Shooter(TalonFX shooterMaster_in) {
 		
 		shooterMaster = shooterMaster_in;
 
-		shooterMaster.configFactoryDefault();
+		shooterMaster.getConfigurator().apply(new TalonFXConfiguration());
 		
 		// Mode of operation during Neutral output may be set by using the setNeutralMode() function.
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.
-		shooterMaster.setNeutralMode(NeutralMode.Brake);
+		TalonFXConfiguration shooterMaster = new TalonFXConfiguration();
+
+		shooterMaster.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
 		// Sensors for motor controllers provide feedback about the position, velocity, and acceleration
 		// of the system using that motor controller.
@@ -78,18 +81,20 @@ public class Shooter extends SubsystemBase implements IShooter{
 		// This ensures the best resolution possible when performing closed-loops in firmware.
 		// CTRE Magnetic Encoder (relative/quadrature) =  4096 units per rotation
 		// FX Integrated Sensor = 2048 units per rotation
-		shooterMaster.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS);
+		//shooterMaster.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS);
+		shooterMaster.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
 
 		// Sensor phase is the term used to explain sensor direction.
 		// In order for limit switches and closed-loop features to function properly the sensor and motor has to be in-phase.
 		// This means that the sensor position must move in a positive direction as the motor controller drives positive output.  
-		shooterMaster.setSensorPhase(true);
-		
+		//shooterMaster.setSensorPhase(true);
+		// When using a remote sensor, you can invert the remote sensor to bring it in phase with the Talon FX.
+
 		// Motor controller output direction can be set by calling the setInverted() function as seen below.
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
 		// Only the motor leads are inverted. This feature ensures that sensor phase and limit switches will properly match the LED pattern
 		// (when LEDs are green => forward limit switch and soft limits are being checked).
-		shooterMaster.setInverted(true);
+		shooterMaster.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
 		
 		// set peak output to max in case if had been reduced previously
 		setNominalAndPeakOutputs(MAX_PCT_OUTPUT);
@@ -191,7 +196,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 	
 	public void setPIDParameters()
 	{
-		shooterMaster.configAllowableClosedloopError(SLOT_0, TICK_PER_100MS_THRESH, TALON_TIMEOUT_MS);
+		//shooterMaster.configAllowableClosedloopError(SLOT_0, TICK_PER_100MS_THRESH, TALON_TIMEOUT_MS);
 		
 		// P is the proportional gain. It modifies the closed-loop output by a proportion (the gain value)
 		// of the closed-loop error.
@@ -218,10 +223,22 @@ public class Shooter extends SubsystemBase implements IShooter{
 		// In order to calculate feed-forward, you will need to measure your motor's velocity at a specified percent output
 		// (preferably an output close to the intended operating range).
 			
-		shooterMaster.config_kP(SLOT_0, SHOOT_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
+		var talonFXConfigs = new TalonFXConfiguration();
+
+		// set slot 0 gains and leave every other config factory-default
+		var slot0Configs = talonFXConfigs.Slot0;
+		slot0Configs.kV = SHOOT_FEED_FORWARD;
+		slot0Configs.kP = SHOOT_PROPORTIONAL_GAIN;
+		slot0Configs.kI = SHOOT_INTEGRAL_GAIN;
+		slot0Configs.kD = SHOOT_DERIVATIVE_GAIN;
+
+		// apply all configs, 20 ms total timeout
+		shooterMaster.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
+
+		/*shooterMaster.config_kP(SLOT_0, SHOOT_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
 		shooterMaster.config_kI(SLOT_0, SHOOT_INTEGRAL_GAIN, TALON_TIMEOUT_MS);
 		shooterMaster.config_kD(SLOT_0, SHOOT_DERIVATIVE_GAIN, TALON_TIMEOUT_MS);	
-		shooterMaster.config_kF(SLOT_0, SHOOT_FEED_FORWARD, TALON_TIMEOUT_MS);
+		shooterMaster.config_kF(SLOT_0, SHOOT_FEED_FORWARD, TALON_TIMEOUT_MS);*/
 	}	
 		
 	// NOTE THAT THIS METHOD WILL IMPACT BOTH OPEN AND CLOSED LOOP MODES
@@ -246,7 +263,8 @@ public class Shooter extends SubsystemBase implements IShooter{
 
 	// in units per 100 ms
 	public int getEncoderVelocity() {
-		return (int) (shooterMaster.getSelectedSensorVelocity(PRIMARY_PID_LOOP));
+		//return (int) (shooterMaster.getSelectedSensorVelocity(PRIMARY_PID_LOOP));
+		return (int) shooterMaster.getVelocity().getValueAsDouble();
 	}
 
 	// in revolutions per minute

@@ -6,15 +6,30 @@ package frc.robot.subsystems;
 //import java.util.Timer;
 //import java.util.TimerTask;
 
-import com.ctre.phoenix.motorcontrol.FeedbackDevice;
-import com.ctre.phoenix.motorcontrol.LimitSwitchNormal;
-import com.ctre.phoenix.motorcontrol.LimitSwitchSource;
-import com.ctre.phoenix.ParamEnum;
-import com.ctre.phoenix.motorcontrol.ControlMode;
+//import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+import com.ctre.phoenix6.configs.FeedbackConfigs;
+import com.ctre.phoenix6.configs.HardwareLimitSwitchConfigs;
+
+import javax.swing.text.Position;
+
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.PositionDutyCycle;
+import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
+/*import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.StatusFrame;
-import com.ctre.phoenix.motorcontrol.can.BaseMotorController;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
+import com.ctre.phoenix.motorcontrol.StatusFrame;*/
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.ForwardLimitSourceValue;
+import com.ctre.phoenix6.signals.ForwardLimitTypeValue;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.ReverseLimitSourceValue;
+import com.ctre.phoenix6.signals.ReverseLimitTypeValue;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Joystick;
@@ -60,8 +75,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 
 	private final static int MOVE_STALLED_MINIMUM_COUNT = MOVE_ON_TARGET_MINIMUM_COUNT * 2 + 30; // number of times/iterations we need to be stalled to really be stalled
 
-	WPI_TalonFX elevator; 
-	BaseMotorController elevator_follower;
+	TalonFX elevator; 
+	TalonFX elevator_follower;
 	
 	boolean isMoving;
 	boolean isMovingUp;
@@ -73,48 +88,69 @@ public class Elevator extends SubsystemBase implements IElevator {
 	private int stalledCount; // counter indicating how many times/iterations we were stalled
 	
 	
-	public Elevator(WPI_TalonFX elevator_in, BaseMotorController elevator_follower_in) {
+	public Elevator(TalonFX elevator_in, TalonFX elevator_follower_in) {
 		
 		elevator = elevator_in;
 		elevator_follower = elevator_follower_in;
-				
-		elevator.configFactoryDefault();
-		elevator_follower.configFactoryDefault();
+
+		elevator.getConfigurator().apply(new TalonFXConfiguration());
+		elevator_follower.getConfigurator().apply(new TalonFXConfiguration());
+
+		// Both the Talon SRX and Victor SPX have a follower feature that allows the motor controllers to mimic another motor controller's output.
+		// Users will still need to set the motor controller's direction, and neutral mode.
+		// The method follow() allows users to create a motor controller follower of not only the same model, but also other models
+		// , talon to talon, victor to victor, talon to victor, and victor to talon.
+		elevator_follower.setControl(new Follower(elevator.getDeviceID(), false));
 		
 		// Mode of operation during Neutral output may be set by using the setNeutralMode() function.
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.
-		elevator.setNeutralMode(NeutralMode.Brake);
-		elevator_follower.setNeutralMode(NeutralMode.Brake);
+		TalonFXConfiguration elevator = new TalonFXConfiguration();
+		TalonFXConfiguration elevator_follower = new TalonFXConfiguration();
+
+		elevator.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+		elevator_follower.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+		//elevator.setNeutralMode(NeutralMode.Brake);
+		//elevator_follower.setNeutralMode(NeutralMode.Brake);
 				
 		// Sensor phase is the term used to explain sensor direction.
 		// In order for limit switches and closed-loop features to function properly the sensor and motor has to be in-phase.
 		// This means that the sensor position must move in a positive direction as the motor controller drives positive output.
 		
-		elevator.setSensorPhase(true); // false for SRX // TODO switch to true if required if switching to Talon FX
+		//elevator.setSensorPhase(true); // false for SRX // TODO switch to true if required if switching to Talon FX
 		
-		//Enable limit switches
-		elevator.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
-		elevator.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
+		//Enable forward limit switches
+		elevator.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteTalonFX;
+        elevator.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
+        elevator.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
+        elevator.HardwareLimitSwitch.ForwardLimitEnable = true;
+		//drawer.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
+		
+		//Enable reverse limit switches
+		elevator.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteTalonFX;
+        elevator.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
+        elevator.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
+        elevator.HardwareLimitSwitch.ReverseLimitEnable = true;
 		elevator.overrideLimitSwitchesEnable(true);
 	
 		// Motor controller output direction can be set by calling the setInverted() function as seen below.
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
 		// Only the motor leads are inverted. This feature ensures that sensor phase and limit switches will properly match the LED pattern
 		// (when LEDs are green => forward limit switch and soft limits are being checked).
-		elevator.setInverted(true);  // TODO switch to false if required if switching to Talon FX
-		elevator_follower.setInverted(true);  // TODO comment out if switching to Talon FX
+		elevator.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
+		elevator_follower.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+		//elevator.setInverted(true);  // TODO switch to false if required if switching to Talon FX
+		//elevator_follower.setInverted(true);  // TODO comment out if switching to Talon FX
 		
-		// Both the Talon SRX and Victor SPX have a follower feature that allows the motor controllers to mimic another motor controller's output.
-		// Users will still need to set the motor controller's direction, and neutral mode.
-		// The method follow() allows users to create a motor controller follower of not only the same model, but also other models
-		// , talon to talon, victor to victor, talon to victor, and victor to talon.
-		elevator_follower.follow(elevator);
+		
 
 		// Motor controllers that are followers can set Status 1 and Status 2 to 255ms(max) using setStatusFramePeriod.
 		// The Follower relies on the master status frame allowing its status frame to be slowed without affecting performance.
 		// This is a useful optimization to manage CAN bus utilization.
+
+		elevator.getPosition().setUpdateFrequency(5);
 		elevator_follower.setStatusFramePeriod(StatusFrame.Status_1_General, 255, TALON_TIMEOUT_MS);
+		//elevator.getPosition().setUpdateFrequency(5);
 		elevator_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);
 
 		setPIDParameters();
@@ -132,8 +168,10 @@ public class Elevator extends SubsystemBase implements IElevator {
 		// This ensures the best resolution possible when performing closed-loops in firmware.
 		// CTRE Magnetic Encoder (relative/quadrature) =  4096 units per rotation		
 		// FX Integrated Sensor = 2048 units per rotation
-		elevator.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // .CTRE_MagEncoder_Relative for SRX // TODO switch to FeedbackDevice.IntegratedSensor if switching to Talon FX
 		
+		//elevator.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // .CTRE_MagEncoder_Relative for SRX // TODO switch to FeedbackDevice.IntegratedSensor if switching to Talon FX
+		elevator.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
+
 		// this will reset the encoder automatically when at or past the forward limit sensor
 		elevator.configSetParameter(ParamEnum.eClearPositionOnLimitF, 1, 0, 0, TALON_TIMEOUT_MS);
 		elevator.configSetParameter(ParamEnum.eClearPositionOnLimitR, 0, 0, 0, TALON_TIMEOUT_MS);
@@ -220,7 +258,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 	}
 
 	public int getEncoderVelocity() {
-		return (int) (elevator.getSelectedSensorVelocity(PRIMARY_PID_LOOP));
+		//return (int) (elevator.getSelectedSensorVelocity(PRIMARY_PID_LOOP));
+		return (int) elevator.getVelocity().getValueAsDouble();
 	}
 	
 	public void moveUp() {
@@ -230,8 +269,10 @@ public class Elevator extends SubsystemBase implements IElevator {
 		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
 
 		tac = -LENGTH_OF_TRAVEL_TICKS;
-		
-		elevator.set(ControlMode.Position,tac);
+
+		//elevator.set(ControlMode.Position,tac);
+		elevator.setControl(PositionVoltage, tac); //fix
+
 		
 		isMoving = true;
 		isMovingUp = true;
@@ -248,7 +289,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 
 		tac = -LENGTH_OF_MIDWAY_TICKS;
 		
-		elevator.set(ControlMode.Position,tac);
+		elevator.setControl(PositionVoltage, tac);
+		//elevator.set(ControlMode.Position,tac);
 		
 		isMoving = true;
 		isMovingUp = true;
@@ -264,7 +306,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
 
 		tac = 0; // adjust as needed
-		elevator.set(ControlMode.Position,tac);
+		//elevator.set(ControlMode.Position,tac);
+		elevator.setControl(PositionVoltage);
 		
 		isMoving = true;
 		isMovingUp = false;
@@ -274,7 +317,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 	}
 
 	public double getEncoderPosition() {
-		return elevator.getSelectedSensorPosition(PRIMARY_PID_LOOP);
+		////return elevator.getSelectedSensorPosition(PRIMARY_PID_LOOP);
+		return elevator.getPosition().getValueAsDouble();
 	}
 	
 	public void stay() {	 		
@@ -283,7 +327,9 @@ public class Elevator extends SubsystemBase implements IElevator {
 	}
 
 	public synchronized void stop() {
-		elevator.set(ControlMode.PercentOutput, 0);
+		//elevator.set(ControlMode.PercentOutput, 0);
+		//dutyCycleOut = 0;
+		elevator.setControl(DutyCycleOut, 0);
 		
 		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
 		
@@ -292,7 +338,7 @@ public class Elevator extends SubsystemBase implements IElevator {
 	}
 	
 	private void setPIDParameters() {		
-		elevator.configAllowableClosedloopError(SLOT_0, TALON_TICK_THRESH, TALON_TIMEOUT_MS);
+		//elevator.configAllowableClosedloopError(SLOT_0, TALON_TICK_THRESH, TALON_TIMEOUT_MS);
 		
 		// P is the proportional gain. It modifies the closed-loop output by a proportion (the gain value)
 		// of the closed-loop error.
@@ -319,10 +365,22 @@ public class Elevator extends SubsystemBase implements IElevator {
 		// In order to calculate feed-forward, you will need to measure your motor's velocity at a specified percent output
 		// (preferably an output close to the intended operating range).
 		
-		elevator.config_kP(SLOT_0, MOVE_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
+		var talonFXConfigs = new TalonFXConfiguration();
+
+		// set slot 0 gains and leave every other config factory-default
+		var slot0Configs = talonFXConfigs.Slot0;
+		slot0Configs.kV = 0;
+		slot0Configs.kP = MOVE_PROPORTIONAL_GAIN;
+		slot0Configs.kI = MOVE_INTEGRAL_GAIN;
+		slot0Configs.kD = MOVE_DERIVATIVE_GAIN;
+
+		// apply all configs, 20 ms total timeout
+		elevator.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
+
+		/*elevator.config_kP(SLOT_0, MOVE_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
 		elevator.config_kI(SLOT_0, MOVE_INTEGRAL_GAIN, TALON_TIMEOUT_MS);
 		elevator.config_kD(SLOT_0, MOVE_DERIVATIVE_GAIN, TALON_TIMEOUT_MS);
-		elevator.config_kF(SLOT_0, 0, TALON_TIMEOUT_MS);
+		elevator.config_kF(SLOT_0, 0, TALON_TIMEOUT_MS);*/
 	}
 	
 	// NOTE THAT THIS METHOD WILL IMPACT BOTH OPEN AND CLOSED LOOP MODES
@@ -396,7 +454,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 	// MAKE SURE THAT YOU ARE NOT IN A CLOSED LOOP CONTROL MODE BEFORE CALLING THIS METHOD.
 	// OTHERWISE THIS IS EQUIVALENT TO MOVING TO THE DISTANCE TO THE CURRENT ZERO IN REVERSE! 
 	public void resetEncoder() {
-		elevator.set(ControlMode.PercentOutput,0); // we stop AND MAKE SURE WE DO NOT MOVE WHEN SETTING POSITION
+		//elevator.set(ControlMode.PercentOutput, 0); // we stop AND MAKE SURE WE DO NOT MOVE WHEN SETTING POSITION
+		elevator.setControl(DutyCycleOut, 0);
 		elevator.setSelectedSensorPosition(0, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // we mark the virtual zero
 	}
 

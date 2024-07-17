@@ -5,15 +5,16 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
-import com.ctre.phoenix.motorcontrol.can.BaseMotorController;
-import com.ctre.phoenix.motorcontrol.FeedbackDevice;
-import com.ctre.phoenix.motorcontrol.LimitSwitchNormal;
-import com.ctre.phoenix.motorcontrol.LimitSwitchSource;
-import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.StatusFrame;
-import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.ctre.phoenix.ParamEnum;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.ForwardLimitSourceValue;
+import com.ctre.phoenix6.signals.ForwardLimitTypeValue;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.ReverseLimitSourceValue;
+import com.ctre.phoenix6.signals.ReverseLimitTypeValue;
 
 import frc.robot.interfaces.*;
 import frc.robot.RobotContainer;
@@ -82,8 +83,8 @@ public class Neck extends SubsystemBase implements INeck {
 	boolean isReallyStalled;
 	boolean isHoming;
 	
-	WPI_TalonFX neck;
-	BaseMotorController neck_follower;
+	TalonFX neck;
+	TalonFX neck_follower;
 	
 	double tac;
 
@@ -93,41 +94,60 @@ public class Neck extends SubsystemBase implements INeck {
 	/**
  	* The {@code Neck} class contains fields and methods pertaining to the function of the neck.
 	*/	
-	public Neck(WPI_TalonFX neck_in, BaseMotorController neck_follower_in) {
+	public Neck(TalonFX neck_in, TalonFX neck_follower_in) {
 		neck = neck_in;
 		neck_follower = neck_follower_in;
 		
-		neck.configFactoryDefault();
-		neck_follower.configFactoryDefault();
+		neck.getConfigurator().apply(new TalonFXConfiguration());
+		neck_follower.getConfigurator().apply(new TalonFXConfiguration());
+
+		// Both the Talon SRX and Victor SPX have a follower feature that allows the motor controllers to mimic another motor controller's output.
+		// Users will still need to set the motor controller's direction, and neutral mode.
+		// The method follow() allows users to create a motor controller follower of not only the same model, but also other models
+		// , talon to talon, victor to victor, talon to victor, and victor to talon.
+		neck_follower.setControl(new Follower(neck.getDeviceID(), false));
 
 		// Mode of operation during Neutral output may be set by using the setNeutralMode() function.
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.	
-		neck.setNeutralMode(NeutralMode.Brake);
-		neck_follower.setNeutralMode(NeutralMode.Brake);
+
+		TalonFXConfiguration neck = new TalonFXConfiguration();
+		TalonFXConfiguration neck_follower = new TalonFXConfiguration();
+		//neck.setNeutralMode(NeutralMode.Brake);
+		//neck_follower.setNeutralMode(NeutralMode.Brake);
+
+		neck.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+		neck_follower.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 		
 		// Sensor phase is the term used to explain sensor direction.
 		// In order for limit switches and closed-loop features to function properly the sensor and motor has to be in-phase.
 		// This means that the sensor position must move in a positive direction as the motor controller drives positive output.
-		neck.setSensorPhase(true);
+		//neck.setSensorPhase(true);
+		// When using a remote sensor, you can invert the remote sensor to bring it in phase with the Talon FX.
 
-		// Enables limit switches
-		neck.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
-		neck.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
+		neck.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteTalonFX;
+        neck.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
+        neck.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
+        neck.HardwareLimitSwitch.ForwardLimitEnable = true;
+		//drawer.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
+		
+		//Enable reverse limit switches
+		neck.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteTalonFX;
+        neck.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
+        neck.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
+        neck.HardwareLimitSwitch.ReverseLimitEnable = true;
+		//neck.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
+		//neck.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		neck.overrideLimitSwitchesEnable(true);
 
 		// Motor controller output direction can be set by calling the setInverted() function as seen below.
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
 		// Only the motor leads are inverted. This feature ensures that sensor phase and limit switches will properly match the LED pattern
 		// (when LEDs are green => forward limit switch and soft limits are being checked). 	
-		neck.setInverted(false); // invert if required
-		neck_follower.setInverted(true);
-
-		// Both the Talon SRX and Victor SPX have a follower feature that allows the motor controllers to mimic another motor controller's output.
-		// Users will still need to set the motor controller's direction, and neutral mode.
-		// The method follow() allows users to create a motor controller follower of not only the same model, but also other models
-		// , talon to talon, victor to victor, talon to victor, and victor to talon.
-		neck_follower.follow(neck);
+		neck.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
+		neck_follower.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+		//neck.setInverted(false); // invert if required
+		//neck_follower.setInverted(true);
 
 		// Motor controllers that are followers can set Status 1 and Status 2 to 255ms(max) using setStatusFramePeriod.
 		// The Follower relies on the master status frame allowing its status frame to be slowed without affecting performance.
@@ -149,7 +169,8 @@ public class Neck extends SubsystemBase implements INeck {
 		// This ensures the best resolution possible when performing closed-loops in firmware.
 		// CTRE Magnetic Encoder (relative/quadrature) =  4096 units per rotation		
 		// FX Integrated Sensor = 2048 units per rotation
-		neck.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor,	PRIMARY_PID_LOOP, TALON_TIMEOUT_MS);
+		//neck.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor,	PRIMARY_PID_LOOP, TALON_TIMEOUT_MS);
+		neck.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
 
 		// this will reset the encoder automatically when at or past the reverse limit sensor
 		neck.configSetParameter(ParamEnum.eClearPositionOnLimitR, 0, 0, 0, TALON_TIMEOUT_MS);
@@ -263,7 +284,8 @@ public class Neck extends SubsystemBase implements INeck {
 	}
 
 	public int getEncoderVelocity() {
-		return (int) (neck.getSelectedSensorVelocity(PRIMARY_PID_LOOP));
+		//return (int) (neck.getSelectedSensorVelocity(PRIMARY_PID_LOOP));
+		return (int) neck.getVelocity().getValueAsDouble();
 	}
 	
 	public void moveUp() {	
@@ -274,7 +296,8 @@ public class Neck extends SubsystemBase implements INeck {
 		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
 
 		tac = -ANGLE_TO_TRAVEL_TICKS;
-		neck.set(ControlMode.Position,tac);
+		//neck.set(ControlMode.Position,tac);
+		neck.setControl(DutyCycleOut, tac);
 		
 		isMoving = true;
 		isMovingUp = true;
@@ -291,8 +314,9 @@ public class Neck extends SubsystemBase implements INeck {
 		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
 
 		tac = -ANGLE_TO_FEED_NOTE_TICKS;
-		neck.set(ControlMode.Position,tac);
-		
+		//neck.set(ControlMode.Position,tac);
+		neck.setControl(DutyCycleOut, tac);
+
 		isMoving = true;
 		isMovingUp = true;
 		onTargetCount = 0;
@@ -309,7 +333,8 @@ public class Neck extends SubsystemBase implements INeck {
 		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
 
 		tac = encoder_ticks;
-		neck.set(ControlMode.Position,tac);
+		//neck.set(ControlMode.Position,tac);
+		neck.setControl(DutyCycleOut, tac);
 		
 		isMoving = true;
 		isMovingUp = true;
@@ -326,7 +351,8 @@ public class Neck extends SubsystemBase implements INeck {
 		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
 
 		tac = -ANGLE_TO_MIDWAY_TICKS;
-		neck.set(ControlMode.Position,tac);
+		//neck.set(ControlMode.Position,tac);
+		neck.setControl(DutyCycleOut, tac);
 		
 		isMoving = true;
 		isMovingUp = true;
@@ -343,7 +369,8 @@ public class Neck extends SubsystemBase implements INeck {
 		setNominalAndPeakOutputs(SUPER_REDUCED_PCT_OUTPUT);
 
 		tac = -ANGLE_TO_SUB_TICKS;
-		neck.set(ControlMode.Position,tac);
+		//neck.set(ControlMode.Position,tac);
+		neck.setControl(DutyCycleOut, tac);
 		
 		isMoving = true;
 		isMovingUp = true;
@@ -360,7 +387,8 @@ public class Neck extends SubsystemBase implements INeck {
 		setNominalAndPeakOutputs(SUPER_REDUCED_PCT_OUTPUT);
 
 		tac = -ANGLE_TO_ACROSS_FIELD_TICKS;
-		neck.set(ControlMode.Position,tac);
+		neck.setControl(DutyCycleOut, tac);
+		//neck.set(ControlMode.Position,tac);
 		
 		isMoving = true;
 		isMovingUp = true;
@@ -429,7 +457,7 @@ public class Neck extends SubsystemBase implements INeck {
 	}	
 	
 	private void setPIDParameters() {		
-		neck.configAllowableClosedloopError(SLOT_0, TALON_TICK_THRESH, TALON_TIMEOUT_MS);
+		//neck.configAllowableClosedloopError(SLOT_0, TALON_TICK_THRESH, TALON_TIMEOUT_MS);
 		
 		// P is the proportional gain. It modifies the closed-loop output by a proportion (the gain value)
 		// of the closed-loop error.
@@ -455,11 +483,22 @@ public class Neck extends SubsystemBase implements INeck {
 		// The result of this multiplication is in motor output units [-1023, 1023]. This allows the robot to feed-forward using the target set-point.
 		// In order to calculate feed-forward, you will need to measure your motor's velocity at a specified percent output
 		// (preferably an output close to the intended operating range).
-		
-		neck.config_kP(SLOT_0, MOVE_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
+		var talonFXConfigs = new TalonFXConfiguration();
+
+		// set slot 0 gains and leave every other config factory-default
+		var slot0Configs = talonFXConfigs.Slot0;
+		slot0Configs.kV = 0;
+		slot0Configs.kP = MOVE_PROPORTIONAL_GAIN;
+		slot0Configs.kI = MOVE_INTEGRAL_GAIN;
+		slot0Configs.kD = MOVE_DERIVATIVE_GAIN;
+
+		// apply all configs, 20 ms total timeout
+		neck.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
+
+		/*neck.config_kP(SLOT_0, MOVE_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
 		neck.config_kI(SLOT_0, MOVE_INTEGRAL_GAIN, TALON_TIMEOUT_MS);
 		neck.config_kD(SLOT_0, MOVE_DERIVATIVE_GAIN, TALON_TIMEOUT_MS);
-		neck.config_kF(SLOT_0, 0, TALON_TIMEOUT_MS);
+		neck.config_kF(SLOT_0, 0, TALON_TIMEOUT_MS);*/
 	}
 
 	public void setNominalAndPeakOutputs(double peakOutput)
