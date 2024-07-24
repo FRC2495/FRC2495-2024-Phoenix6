@@ -4,9 +4,12 @@ import edu.wpi.first.wpilibj.Joystick;
 //import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import javax.swing.text.Position;
+
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.PositionDutyCycle;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -44,6 +47,15 @@ public class Roller extends SubsystemBase implements IRoller{
 	TalonFX roller;
 	TalonFX roller_follower; 
 		
+	DutyCycleOut rollerStopOut = new DutyCycleOut(0);
+	DutyCycleOut rollerSuperReducedOut = new DutyCycleOut(-SUPER_REDUCED_PCT_OUTPUT);
+	DutyCycleOut rollerReducedOut = new DutyCycleOut(-REDUCED_PCT_OUTPUT);
+	DutyCycleOut rollerMaxOut = new DutyCycleOut(-MAX_PCT_OUTPUT);
+
+
+	PositionDutyCycle rollerHomePosition = new PositionDutyCycle(0);
+	PositionDutyCycle rollerShortDistancePosition = new PositionDutyCycle(LENGTH_OF_SHORT_DISTANCE_TICKS);
+
 	boolean isMoving;
 	boolean isRolling;
 	boolean isReleasing;
@@ -132,7 +144,7 @@ public class Roller extends SubsystemBase implements IRoller{
 		roller_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);
 		
 		// set peak output to max in case if had been reduced previously
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT);
+		setPeakOutputs(MAX_PCT_OUTPUT);
 	}
 	
 	/*@Override
@@ -155,7 +167,8 @@ public class Roller extends SubsystemBase implements IRoller{
 	public boolean tripleCheckMove() {
 		if (isMoving) {
 			
-			double error = roller.getClosedLoopError(PRIMARY_PID_LOOP);
+			//double error = roller.getClosedLoopError(PRIMARY_PID_LOOP);
+			double error = roller.getClosedLoopError().getValueAsDouble();
 			
 			boolean isOnTarget = (Math.abs(error) < TICK_THRESH);
 			
@@ -190,7 +203,7 @@ public class Roller extends SubsystemBase implements IRoller{
 	public void roll() {
 		//SwitchedCamera.setUsbCamera(Ports.UsbCamera.GRASPER_CAMERA);
 
-		roller.set(ControlMode.PercentOutput, -REDUCED_PCT_OUTPUT);
+		roller.setControl(rollerReducedOut);
 		
 		isRolling = true;
 		isReleasing = false;
@@ -202,11 +215,12 @@ public class Roller extends SubsystemBase implements IRoller{
 	public void rollLowRpm() {
 
 		setPIDParameters();
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
+		setPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
 
 		double targetVelocity_UnitsPer100ms = -ROLL_LOW_RPM * CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
 
-		roller.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
+		//roller.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
+		roller.setVelocity(rollerMaxOut.withOutput(targetVelocity_UnitsPer100ms));
 		
 		isRolling = true;
 		isReleasing = false;
@@ -219,7 +233,7 @@ public class Roller extends SubsystemBase implements IRoller{
 		//SwitchedCamera.setUsbCamera(Ports.UsbCamera.GRASPER_CAMERA);
 
 		//roller.set(ControlMode.PercentOutput, SUPER_REDUCED_PCT_OUTPUT);
-		roller.setControl(DutyCycleOut, SUPER_REDUCED_PCT_OUTPUT);
+		roller.setControl(rollerSuperReducedOut);
 		
 		isReleasing = true;
 		isRolling = false;
@@ -236,11 +250,11 @@ public class Roller extends SubsystemBase implements IRoller{
 		
 		setPIDParametersShortDistance();
 		System.out.println("Releasing");
-		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT_SHORT_DISTANCE);
+		setPeakOutputs(REDUCED_PCT_OUTPUT_SHORT_DISTANCE);
 
-		tac = +LENGTH_OF_SHORT_DISTANCE_TICKS;
+		//tac = +LENGTH_OF_SHORT_DISTANCE_TICKS;
 		
-		roller.setControl(DutyCycleOut, tac);
+		roller.setControl(rollerShortDistancePosition);
 		//roller.set(ControlMode.Position,tac);
 		
 		isReleasing = true;
@@ -255,7 +269,7 @@ public class Roller extends SubsystemBase implements IRoller{
 		//SwitchedCamera.setUsbCamera(Ports.UsbCamera.GRASPER_CAMERA);
 
 		//roller.set(ControlMode.PercentOutput, -MAX_PCT_OUTPUT);
-		roller.setControl(DutyCycleOut, -MAX_PCT_OUTPUT);  //TODO fix
+		roller.setControl(rollerMaxOut);  
 		
 		isRolling = false;
 		isReleasing = false;
@@ -265,7 +279,8 @@ public class Roller extends SubsystemBase implements IRoller{
 	}
 	
 	public double getEncoderPosition() {
-		return roller.getSelectedSensorPosition(PRIMARY_PID_LOOP);
+		//return roller.getSelectedSensorPosition(PRIMARY_PID_LOOP);
+		return roller.getPosition().getValueAsDouble();
 	}
 
 	public double getPresetRpm()
@@ -275,7 +290,7 @@ public class Roller extends SubsystemBase implements IRoller{
 	
 	public void stop() {
 		//roller.set(ControlMode.PercentOutput, 0);
-		roller.setControl(DutyCycleOut, 0); //TODO fix
+		roller.setControl(rollerStopOut);
 		
 		isRolling = false;
 		isReleasing = false;
@@ -283,7 +298,7 @@ public class Roller extends SubsystemBase implements IRoller{
 
 		isMoving = false;
 
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
+		setPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
 	}
 
 	public void setPIDParameters()
@@ -370,6 +385,7 @@ public class Roller extends SubsystemBase implements IRoller{
 		slot0Configs.kP = ROLL_PROPORTIONAL_GAIN_SHORT_DISTANCE;
 		slot0Configs.kI = ROLL_INTEGRAL_GAIN_SHORT_DISTANCE;
 		slot0Configs.kD = ROLL_DERIVATIVE_GAIN_SHORT_DISTANCE;
+		//slot0Configs.kS = SHOOT_DERIVATIVE_GAIN; //TODO change value
 
 		// apply all configs, 20 ms total timeout
 		roller.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
@@ -381,13 +397,13 @@ public class Roller extends SubsystemBase implements IRoller{
 	}	
 		
 	// NOTE THAT THIS METHOD WILL IMPACT BOTH OPEN AND CLOSED LOOP MODES
-	public void setNominalAndPeakOutputs(double peakOutput)
+	public void setPeakOutputs(double peakOutput)
 	{
-		roller.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
+		/*roller.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
 		roller.configPeakOutputReverse(-peakOutput, TALON_TIMEOUT_MS);
 
 		roller.configNominalOutputForward(0, TALON_TIMEOUT_MS);
-		roller.configNominalOutputReverse(0, TALON_TIMEOUT_MS);
+		roller.configNominalOutputReverse(0, TALON_TIMEOUT_MS);*/
 	}
 	
 	public boolean isRolling(){
@@ -409,7 +425,8 @@ public class Roller extends SubsystemBase implements IRoller{
 	// for debug purpose only
 	public void joystickControl(Joystick joystick)
 	{
-		roller.set(ControlMode.PercentOutput, -joystick.getY());
+		//roller.set(ControlMode.PercentOutput, -joystick.getY());
+		roller.setControl(rollerReducedOut.withOutput(-joystick.getY()));
 	}
 
 	// in units per 100 ms
@@ -420,7 +437,7 @@ public class Roller extends SubsystemBase implements IRoller{
 
 	// in revolutions per minute
 	public int getRpm() {
-		return (int) (roller.getSelectedSensorVelocity(PRIMARY_PID_LOOP)*600/CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION);  // 1 min = 600 * 100 ms, 1 revolution = TICKS_PER_ROTATION ticks 
+		return (int) (roller.getVelocity(PRIMARY_PID_LOOP)*600/CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION);  // 1 min = 600 * 100 ms, 1 revolution = TICKS_PER_ROTATION ticks 
 	}
 
 	public double getTarget() {
@@ -430,8 +447,9 @@ public class Roller extends SubsystemBase implements IRoller{
 	// MAKE SURE THAT YOU ARE NOT IN A CLOSED LOOP CONTROL MODE BEFORE CALLING THIS METHOD.
 	// OTHERWISE THIS IS EQUIVALENT TO MOVING TO THE DISTANCE TO THE CURRENT ZERO IN REVERSE! 
 	public void resetEncoder() {
-		roller.set(ControlMode.PercentOutput,0); // we stop AND MAKE SURE WE DO NOT MOVE WHEN SETTING POSITION
-		roller.setSelectedSensorPosition(0, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // we mark the virtual zero
+		roller.setControl(rollerStopOut); // we stop AND MAKE SURE WE DO NOT MOVE WHEN SETTING POSITION
+		//roller.setSelectedSensorPosition(0, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // we mark the virtual zero
+		roller.setPosition(0, TALON_TIMEOUT_MS);
 	}
 
 }

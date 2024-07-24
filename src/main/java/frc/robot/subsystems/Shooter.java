@@ -4,6 +4,8 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.controls.VelocityDutyCycle;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -37,7 +39,14 @@ public class Shooter extends SubsystemBase implements IShooter{
 	static final int TALON_TIMEOUT_MS = 20;
 	
 	TalonFX shooterMaster; 
-		
+
+	DutyCycleOut shooterStopOut = new DutyCycleOut(0);
+	DutyCycleOut shooterRedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
+	DutyCycleOut shooterMaxOut = new DutyCycleOut(MAX_PCT_OUTPUT);
+
+	VelocityDutyCycle shooterShootHighVelocity = new VelocityDutyCycle(SHOOT_HIGH_RPM);
+	VelocityDutyCycle shooterShootLowVelocity = new VelocityDutyCycle(SHOOT_LOW_RPM);	
+
 	boolean isShooting;
 	
 	// shoot settings
@@ -97,7 +106,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 		shooterMaster.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
 		
 		// set peak output to max in case if had been reduced previously
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT);
+		setPeakOutputs(MAX_PCT_OUTPUT);
 	}
 	
 	/*@Override
@@ -121,11 +130,12 @@ public class Shooter extends SubsystemBase implements IShooter{
 		//shooterMaster.set(ControlMode.PercentOutput, +ALMOST_MAX_PCT_OUTPUT);
 
 		setPIDParameters();
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
+		setPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
 
 		double targetVelocity_UnitsPer100ms = SHOOT_HIGH_RPM * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
 
-		shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
+		//shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
+		shooterMaster.setControl(shooterMaxOut.withOutput(targetVelocity_UnitsPer100ms));
 		
 		isShooting = true;
 	}
@@ -136,11 +146,11 @@ public class Shooter extends SubsystemBase implements IShooter{
 		//set(ControlMode.PercentOutput, +REDUCED_PCT_OUTPUT);
 
 		setPIDParameters();
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
+		setPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
 
 		double targetVelocity_UnitsPer100ms = SHOOT_LOW_RPM * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
 
-		shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
+		shooterMaster.setControl(shooterMaxOut.withOutput(targetVelocity_UnitsPer100ms));
 		
 		isShooting = true;
 	}
@@ -149,11 +159,12 @@ public class Shooter extends SubsystemBase implements IShooter{
 		SwitchedCamera.setUsbCamera(Ports.UsbCamera.SHOOTER_CAMERA);
 
 		setPIDParameters();
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
+		setPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
 
 		double targetVelocity_UnitsPer100ms = custom_rpm * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
 
-		shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
+		//shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
+		shooterMaster.setControl(shooterMaxOut.withOutput(targetVelocity_UnitsPer100ms));
 		
 		isShooting = true;
 	}
@@ -162,11 +173,12 @@ public class Shooter extends SubsystemBase implements IShooter{
 		SwitchedCamera.setUsbCamera(Ports.UsbCamera.SHOOTER_CAMERA);
 
 		setPIDParameters();
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
+		setPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
 
 		double targetVelocity_UnitsPer100ms = presetRpm * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
 
-		shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
+		//shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
+		shooterMaster.setControl(shooterMaxOut.withOutput(targetVelocity_UnitsPer100ms));
 		
 		isShooting = true;
 	}
@@ -187,11 +199,11 @@ public class Shooter extends SubsystemBase implements IShooter{
 	}
 	
 	public void stop() {
-		shooterMaster.set(ControlMode.PercentOutput, 0);
+		shooterMaster.setControl(shooterStopOut);
 
 		isShooting = false;
 
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
+		setPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
 	}
 	
 	public void setPIDParameters()
@@ -231,6 +243,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 		slot0Configs.kP = SHOOT_PROPORTIONAL_GAIN;
 		slot0Configs.kI = SHOOT_INTEGRAL_GAIN;
 		slot0Configs.kD = SHOOT_DERIVATIVE_GAIN;
+		//slot0Configs.kS = SHOOT_DERIVATIVE_GAIN; //TODO change value
 
 		// apply all configs, 20 ms total timeout
 		shooterMaster.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
@@ -242,13 +255,13 @@ public class Shooter extends SubsystemBase implements IShooter{
 	}	
 		
 	// NOTE THAT THIS METHOD WILL IMPACT BOTH OPEN AND CLOSED LOOP MODES
-	public void setNominalAndPeakOutputs(double peakOutput)
+	public void setPeakOutputs(double peakOutput)
 	{
-		shooterMaster.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
+		/*shooterMaster.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
 		shooterMaster.configPeakOutputReverse(-peakOutput, TALON_TIMEOUT_MS);
 
 		shooterMaster.configNominalOutputForward(0, TALON_TIMEOUT_MS);
-		shooterMaster.configNominalOutputReverse(0, TALON_TIMEOUT_MS);
+		shooterMaster.configNominalOutputReverse(0, TALON_TIMEOUT_MS);*/
 	}
 	
 	public boolean isShooting(){
@@ -258,7 +271,8 @@ public class Shooter extends SubsystemBase implements IShooter{
 	// for debug purpose only
 	public void joystickControl(Joystick joystick)
 	{
-		shooterMaster.set(ControlMode.PercentOutput, joystick.getY());
+		//shooterMaster.set(ControlMode.PercentOutput, joystick.getY());
+		shooterMaster.setControl(shooterRedOut.withOutput(joystick.getY()));
 	}
 
 	// in units per 100 ms
@@ -269,7 +283,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 
 	// in revolutions per minute
 	public int getRpm() {
-		return (int) (shooterMaster.getSelectedSensorVelocity(PRIMARY_PID_LOOP)*600/FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION);  // 1 min = 600 * 100 ms, 1 revolution = TICKS_PER_ROTATION ticks 
+		return (int) (shooterMaster.getVelocity(PRIMARY_PID_LOOP)*600/FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION);  // 1 min = 600 * 100 ms, 1 revolution = TICKS_PER_ROTATION ticks 
 	}
 }
 

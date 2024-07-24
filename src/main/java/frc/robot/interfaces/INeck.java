@@ -20,7 +20,7 @@ public interface INeck extends Subsystem {
 	
 	public void moveDown();
 
-	public double getPosition();
+	//public double getPosition();
 
 	public double getEncoderPosition();
 
@@ -44,6 +44,8 @@ public interface INeck extends Subsystem {
 	
 	public void stop();
 		
+	public void setPeakOutputs(double peakOutput);
+	
 	// for debug purpose only
 	public void joystickControl(Joystick joystick);
 

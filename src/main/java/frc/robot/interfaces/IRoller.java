@@ -15,7 +15,7 @@ public interface IRoller extends Subsystem {
 	public void stop();
 		
 	// NOTE THAT THIS METHOD WILL IMPACT BOTH OPEN AND CLOSED LOOP MODES
-	public void setNominalAndPeakOutputs(double peakOutput);
+	public void setPeakOutputs(double peakOutput);
 	
 	public boolean isRolling();
 	

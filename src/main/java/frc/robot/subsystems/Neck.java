@@ -6,7 +6,9 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.PositionDutyCycle;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.ForwardLimitSourceValue;
@@ -85,6 +87,19 @@ public class Neck extends SubsystemBase implements INeck {
 	
 	TalonFX neck;
 	TalonFX neck_follower;
+
+	DutyCycleOut neckStopOut = new DutyCycleOut(0);
+	DutyCycleOut neckHomeOut = new DutyCycleOut(HOMING_PCT_OUTPUT);
+	DutyCycleOut neckRedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
+
+	PositionDutyCycle neckHomePosition  = new PositionDutyCycle(0);
+	PositionDutyCycle neckAcrossFieldPosition = new PositionDutyCycle(-ANGLE_TO_ACROSS_FIELD_TICKS);
+	PositionDutyCycle neckSubPosition = new PositionDutyCycle(-ANGLE_TO_SUB_TICKS);
+	PositionDutyCycle neckPodiumPosition = new PositionDutyCycle(-ANGLE_TO_PODIUM_TICKS);
+	PositionDutyCycle neckFeedNotePosition = new PositionDutyCycle(-ANGLE_TO_FEED_NOTE_TICKS);
+	PositionDutyCycle neckMidwayPosition = new PositionDutyCycle(-ANGLE_TO_MIDWAY_TICKS);
+	PositionDutyCycle neckUpPosition = new PositionDutyCycle(-ANGLE_TO_TRAVEL_TICKS);
+	PositionDutyCycle neckVirtualHomePosition = new PositionDutyCycle(-VIRTUAL_HOME_OFFSET_TICKS);
 	
 	double tac;
 
@@ -138,7 +153,7 @@ public class Neck extends SubsystemBase implements INeck {
         neck.HardwareLimitSwitch.ReverseLimitEnable = true;
 		//neck.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		//neck.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
-		neck.overrideLimitSwitchesEnable(true);
+		//neck.overrideLimitSwitchesEnable(true);
 
 		// Motor controller output direction can be set by calling the setInverted() function as seen below.
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
@@ -161,7 +176,7 @@ public class Neck extends SubsystemBase implements INeck {
  		//neck.selectProfileSlot(SLOT_0, PRIMARY_PID_LOOP);
 		
 		// set peak output to max in case if had been reduced previously
-		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
+		setPeakOutputs(REDUCED_PCT_OUTPUT);
 
 		// Sensors for motor controllers provide feedback about the position, velocity, and acceleration
 		// of the system using that motor controller.
@@ -191,7 +206,7 @@ public class Neck extends SubsystemBase implements INeck {
 	// homes the hinge
 	// we go down slowly until we hit the limit switch.
 	public void home() {
-		neck.set(ControlMode.PercentOutput,+HOMING_PCT_OUTPUT); // we start moving down
+		neck.setControl(neckHomeOut); // we start moving down
 		
 		isHoming = true;
 	}
@@ -204,7 +219,7 @@ public class Neck extends SubsystemBase implements INeck {
 
 			if (!isHoming) {
 				System.out.println("You have reached the home.");
-				neck.set(ControlMode.PercentOutput,0); // turn power off
+				neck.setControl(neckStopOut); // turn power off
 			}
 		}
 
@@ -215,7 +230,8 @@ public class Neck extends SubsystemBase implements INeck {
 	public boolean tripleCheckMove() {
 		if (isMoving) {
 			
-			double error = neck.getClosedLoopError(PRIMARY_PID_LOOP);
+			//double error = neck.getClosedLoopError(PRIMARY_PID_LOOP);
+			double error = neck.getClosedLoopError().getValueAsDouble();
 			//System.out.println("Neck moving error: " + Math.abs(error));
 			
 			boolean isOnTarget = (Math.abs(error) < TICK_THRESH);
@@ -293,11 +309,11 @@ public class Neck extends SubsystemBase implements INeck {
 		//setPIDParameters();
 		System.out.println("Moving Up");
 		
-		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
+		setPeakOutputs(REDUCED_PCT_OUTPUT);
 
-		tac = -ANGLE_TO_TRAVEL_TICKS;
+		//tac = -ANGLE_TO_TRAVEL_TICKS;
 		//neck.set(ControlMode.Position,tac);
-		neck.setControl(DutyCycleOut, tac);
+		neck.setControl(neckUpPosition);
 		
 		isMoving = true;
 		isMovingUp = true;
@@ -311,11 +327,11 @@ public class Neck extends SubsystemBase implements INeck {
 		//setPIDParameters();
 		System.out.println("Moving To Feed Note");
 		
-		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
+		setPeakOutputs(REDUCED_PCT_OUTPUT);
 
-		tac = -ANGLE_TO_FEED_NOTE_TICKS;
+		//tac = -ANGLE_TO_FEED_NOTE_TICKS;
 		//neck.set(ControlMode.Position,tac);
-		neck.setControl(DutyCycleOut, tac);
+		neck.setControl(neckFeedNotePosition);
 
 		isMoving = true;
 		isMovingUp = true;
@@ -330,11 +346,11 @@ public class Neck extends SubsystemBase implements INeck {
 		//setPIDParameters();
 		//System.out.println("Moving Custom");
 		
-		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
+		setPeakOutputs(REDUCED_PCT_OUTPUT);
 
 		tac = encoder_ticks;
 		//neck.set(ControlMode.Position,tac);
-		neck.setControl(DutyCycleOut, tac);
+		neck.setControl(neckRedOut.withOutput(tac));
 		
 		isMoving = true;
 		isMovingUp = true;
@@ -348,11 +364,11 @@ public class Neck extends SubsystemBase implements INeck {
 		//setPIDParameters();
 		System.out.println("Moving to Midway");
 		
-		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
+		setPeakOutputs(REDUCED_PCT_OUTPUT);
 
-		tac = -ANGLE_TO_MIDWAY_TICKS;
+		//tac = -ANGLE_TO_MIDWAY_TICKS;
 		//neck.set(ControlMode.Position,tac);
-		neck.setControl(DutyCycleOut, tac);
+		neck.setControl(neckMidwayPosition);
 		
 		isMoving = true;
 		isMovingUp = true;
@@ -366,11 +382,11 @@ public class Neck extends SubsystemBase implements INeck {
 		//setPIDParameters();
 		System.out.println("Moving to Sub");
 		
-		setNominalAndPeakOutputs(SUPER_REDUCED_PCT_OUTPUT);
+		setPeakOutputs(SUPER_REDUCED_PCT_OUTPUT);
 
-		tac = -ANGLE_TO_SUB_TICKS;
+		//tac = -ANGLE_TO_SUB_TICKS;
 		//neck.set(ControlMode.Position,tac);
-		neck.setControl(DutyCycleOut, tac);
+		neck.setControl(neckSubPosition);
 		
 		isMoving = true;
 		isMovingUp = true;
@@ -384,10 +400,10 @@ public class Neck extends SubsystemBase implements INeck {
 		//setPIDParameters();
 		System.out.println("Moving Across Field");
 		
-		setNominalAndPeakOutputs(SUPER_REDUCED_PCT_OUTPUT);
+		setPeakOutputs(SUPER_REDUCED_PCT_OUTPUT);
 
-		tac = -ANGLE_TO_ACROSS_FIELD_TICKS;
-		neck.setControl(DutyCycleOut, tac);
+		//tac = -ANGLE_TO_ACROSS_FIELD_TICKS;
+		neck.setControl(neckAcrossFieldPosition);
 		//neck.set(ControlMode.Position,tac);
 		
 		isMoving = true;
@@ -402,10 +418,10 @@ public class Neck extends SubsystemBase implements INeck {
 		//setPIDParameters();
 		System.out.println("Moving to Podium");
 		
-		setNominalAndPeakOutputs(SUPER_REDUCED_PCT_OUTPUT);
+		setPeakOutputs(SUPER_REDUCED_PCT_OUTPUT);
 
-		tac = -ANGLE_TO_PODIUM_TICKS;
-		neck.set(ControlMode.Position,tac);
+		//tac = -ANGLE_TO_PODIUM_TICKS;
+		neck.setControl(neckPodiumPosition);
 		
 		isMoving = true;
 		isMovingUp = true;
@@ -419,10 +435,10 @@ public class Neck extends SubsystemBase implements INeck {
 		//setPIDParameters();
 		System.out.println("Moving Down");
 		
-		setNominalAndPeakOutputs(SUPER_REDUCED_PCT_OUTPUT);
+		setPeakOutputs(SUPER_REDUCED_PCT_OUTPUT);
 
-		tac = -VIRTUAL_HOME_OFFSET_TICKS;
-		neck.set(ControlMode.Position,tac);
+		//tac = -VIRTUAL_HOME_OFFSET_TICKS;
+		neck.setControl(neckVirtualHomePosition);
 		
 		isMoving = true;
 		isMovingUp = false;
@@ -431,12 +447,14 @@ public class Neck extends SubsystemBase implements INeck {
 		stalledCount = 0;
 	}
 
-	public double getPosition() {
-		return neck.getSelectedSensorPosition(PRIMARY_PID_LOOP) * GEAR_RATIO / TICKS_PER_REVOLUTION;
-	}
+	/*public double getPosition() {
+		//return neck.getSelectedSensorPosition(PRIMARY_PID_LOOP) * GEAR_RATIO / TICKS_PER_REVOLUTION;
+		return neck.getPosition();
+	}*/
 
 	public double getEncoderPosition() {
-		return neck.getSelectedSensorPosition(PRIMARY_PID_LOOP);
+		//return neck.getSelectedSensorPosition(PRIMARY_PID_LOOP);
+		return neck.getPosition().getValueAsDouble();
 	}
 
 	public void stay() {	 		
@@ -447,13 +465,13 @@ public class Neck extends SubsystemBase implements INeck {
 	
 	public void stop() {	 
 
-		neck.set(ControlMode.PercentOutput, 0);
+		neck.setControl(neckStopOut);
 		
 		isMoving = false;
 		isMovingUp = false;	
 		isHoming = false;	
 		
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
+		setPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
 	}	
 	
 	private void setPIDParameters() {		
@@ -491,6 +509,7 @@ public class Neck extends SubsystemBase implements INeck {
 		slot0Configs.kP = MOVE_PROPORTIONAL_GAIN;
 		slot0Configs.kI = MOVE_INTEGRAL_GAIN;
 		slot0Configs.kD = MOVE_DERIVATIVE_GAIN;
+		//slot0Configs.kS = SHOOT_DERIVATIVE_GAIN; //TODO change value
 
 		// apply all configs, 20 ms total timeout
 		neck.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
@@ -501,13 +520,13 @@ public class Neck extends SubsystemBase implements INeck {
 		neck.config_kF(SLOT_0, 0, TALON_TIMEOUT_MS);*/
 	}
 
-	public void setNominalAndPeakOutputs(double peakOutput)
+	public void setPeakOutputs(double peakOutput)
 	{
-		neck.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
+		/*neck.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
 		neck.configPeakOutputReverse(-peakOutput, TALON_TIMEOUT_MS);
 		
 		neck.configNominalOutputForward(0, TALON_TIMEOUT_MS);
-		neck.configNominalOutputForward(0, TALON_TIMEOUT_MS);
+		neck.configNominalOutputForward(0, TALON_TIMEOUT_MS);*/
 	}
 
 	public boolean isHoming() {
@@ -548,7 +567,8 @@ public class Neck extends SubsystemBase implements INeck {
 	{
 		if (!isMoving) // if we are already doing a move we don't take over
 		{
-			neck.set(ControlMode.PercentOutput, -joystick.getY());
+			//neck.set(ControlMode.PercentOutput, -joystick.getY());
+			neck.setControl(neckRedOut.withOutput(-joystick.getY()));
 		}
 	}	
 
@@ -556,7 +576,8 @@ public class Neck extends SubsystemBase implements INeck {
 	{
 		if (!isMoving) // if we are already doing a move we don't take over
 		{
-			neck.set(ControlMode.PercentOutput, +MathUtil.applyDeadband(gamepad.getRightY(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*0.6); // adjust sign if desired
+			//neck.set(ControlMode.PercentOutput, +MathUtil.applyDeadband(gamepad.getRightY(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*0.6); // adjust sign if desired
+			neck.setControl(neckRedOut.withOutput(+MathUtil.applyDeadband(gamepad.getRightY(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*0.6)); // adjust sign if desired
 		}
 	}
 
@@ -576,8 +597,10 @@ public class Neck extends SubsystemBase implements INeck {
 	// MAKE SURE THAT YOU ARE NOT IN A CLOSED LOOP CONTROL MODE BEFORE CALLING THIS METHOD.
 	// OTHERWISE THIS IS EQUIVALENT TO MOVING TO THE DISTANCE TO THE CURRENT ZERO IN REVERSE! 
 	public void resetEncoder() {
-		neck.set(ControlMode.PercentOutput,0); // we stop AND MAKE SURE WE DO NOT MOVE WHEN SETTING POSITION
-		neck.setSelectedSensorPosition(0, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // we mark the virtual zero
+		//neck.set(ControlMode.PercentOutput,0); // we stop AND MAKE SURE WE DO NOT MOVE WHEN SETTING POSITION
+		neck.setControl(neckStopOut);
+		neck.setPosition(0, TALON_TIMEOUT_MS);
+		//neck.setSelectedSensorPosition(0, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // we mark the virtual zero
 	}
 
 }

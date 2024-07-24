@@ -77,6 +77,13 @@ public class Elevator extends SubsystemBase implements IElevator {
 
 	TalonFX elevator; 
 	TalonFX elevator_follower;
+
+	DutyCycleOut elevatorStopOut = new DutyCycleOut(0);
+	DutyCycleOut elevatorRedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
+
+	PositionDutyCycle elevatorUpPosition = new PositionDutyCycle(-LENGTH_OF_TRAVEL_TICKS);
+	PositionDutyCycle elevatorMidwayPosition = new PositionDutyCycle(-LENGTH_OF_MIDWAY_TICKS);
+	PositionDutyCycle elevatorHomePosition = new PositionDutyCycle(0);
 	
 	boolean isMoving;
 	boolean isMovingUp;
@@ -131,7 +138,7 @@ public class Elevator extends SubsystemBase implements IElevator {
         elevator.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
         elevator.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
         elevator.HardwareLimitSwitch.ReverseLimitEnable = true;
-		elevator.overrideLimitSwitchesEnable(true);
+		//elevator.overrideLimitSwitchesEnable(true);
 	
 		// Motor controller output direction can be set by calling the setInverted() function as seen below.
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
@@ -159,7 +166,7 @@ public class Elevator extends SubsystemBase implements IElevator {
  		//elevator.selectProfileSlot(SLOT_0, PRIMARY_PID_LOOP);
 		
 		// set peak output to max in case if had been reduced previously
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT);
+		setPeakOutputs(MAX_PCT_OUTPUT);
 
 	
 		// Sensors for motor controllers provide feedback about the position, velocity, and acceleration
@@ -191,7 +198,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 	public boolean tripleCheckMove() {
 		if (isMoving) {
 			
-			double error = elevator.getClosedLoopError(PRIMARY_PID_LOOP);
+			//double error = elevator.getClosedLoopError(PRIMARY_PID_LOOP);
+			double error = elevator.getClosedLoopError().getValueAsDouble();
 			
 			boolean isOnTarget = (Math.abs(error) < TICK_THRESH);
 			
@@ -266,12 +274,12 @@ public class Elevator extends SubsystemBase implements IElevator {
 		
 		//setPIDParameters();
 		System.out.println("Moving Up");
-		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
+		setPeakOutputs(REDUCED_PCT_OUTPUT);
 
-		tac = -LENGTH_OF_TRAVEL_TICKS;
+		//tac = -LENGTH_OF_TRAVEL_TICKS;
 
 		//elevator.set(ControlMode.Position,tac);
-		elevator.setControl(PositionVoltage, tac); //fix
+		elevator.setControl(elevatorUpPosition); //fix
 
 		
 		isMoving = true;
@@ -285,11 +293,11 @@ public class Elevator extends SubsystemBase implements IElevator {
 		
 		//setPIDParameters();
 		System.out.println("Moving to Midway");
-		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
+		setPeakOutputs(REDUCED_PCT_OUTPUT);
 
-		tac = -LENGTH_OF_MIDWAY_TICKS;
+		//tac = -LENGTH_OF_MIDWAY_TICKS;
 		
-		elevator.setControl(PositionVoltage, tac);
+		elevator.setControl(elevatorMidwayPosition);
 		//elevator.set(ControlMode.Position,tac);
 		
 		isMoving = true;
@@ -303,11 +311,11 @@ public class Elevator extends SubsystemBase implements IElevator {
 		
 		//setPIDParameters();
 		System.out.println("Moving Down");
-		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
+		setPeakOutputs(REDUCED_PCT_OUTPUT);
 
-		tac = 0; // adjust as needed
+		//tac = 0; // adjust as needed
 		//elevator.set(ControlMode.Position,tac);
-		elevator.setControl(PositionVoltage);
+		elevator.setControl(elevatorHomePosition);
 		
 		isMoving = true;
 		isMovingUp = false;
@@ -329,9 +337,9 @@ public class Elevator extends SubsystemBase implements IElevator {
 	public synchronized void stop() {
 		//elevator.set(ControlMode.PercentOutput, 0);
 		//dutyCycleOut = 0;
-		elevator.setControl(DutyCycleOut, 0);
+		elevator.setControl(elevatorStopOut);
 		
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
+		setPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
 		
 		isMoving = false;
 		isMovingUp = false;
@@ -373,6 +381,7 @@ public class Elevator extends SubsystemBase implements IElevator {
 		slot0Configs.kP = MOVE_PROPORTIONAL_GAIN;
 		slot0Configs.kI = MOVE_INTEGRAL_GAIN;
 		slot0Configs.kD = MOVE_DERIVATIVE_GAIN;
+		//slot0Configs.kS = SHOOT_DERIVATIVE_GAIN; //TODO change value
 
 		// apply all configs, 20 ms total timeout
 		elevator.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
@@ -384,13 +393,14 @@ public class Elevator extends SubsystemBase implements IElevator {
 	}
 	
 	// NOTE THAT THIS METHOD WILL IMPACT BOTH OPEN AND CLOSED LOOP MODES
-	public void setNominalAndPeakOutputs(double peakOutput)
+	public void setPeakOutputs(double peakOutput)
 	{
-		elevator.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
+		/*elevator.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
 		elevator.configPeakOutputReverse(-peakOutput, TALON_TIMEOUT_MS);
 		
 		elevator.configNominalOutputForward(0, TALON_TIMEOUT_MS);
-		elevator.configNominalOutputReverse(0, TALON_TIMEOUT_MS);
+		elevator.configNominalOutputReverse(0, TALON_TIMEOUT_MS);*/
+
 	}
 	
 	public synchronized boolean isMoving() {
@@ -427,7 +437,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 	{
 		if (!isMoving) // if we are already doing a move we don't take over
 		{
-			elevator.set(ControlMode.PercentOutput, -joystick.getY()); // adjust sign if desired
+			//elevator.set(ControlMode.PercentOutput, -joystick.getY()); // adjust sign if desired
+			elevator.setControl(elevatorRedOut.withOutput(-joystick.getY()));
 		}
 	}
 
@@ -435,7 +446,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 	{
 		if (!isMoving) // if we are already doing a move we don't take over
 		{
-			elevator.set(ControlMode.PercentOutput, +MathUtil.applyDeadband(gamepad.getLeftY(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*1.0/*0.7*/); // adjust sign if desired
+			//elevator.set(ControlMode.PercentOutput, +MathUtil.applyDeadband(gamepad.getLeftY(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*1.0/*0.7*/); // adjust sign if desired
+			elevator.setControl(elevatorRedOut.withOutput(+MathUtil.applyDeadband(gamepad.getLeftY(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*1.0/*0.7*/)); // adjust sign if desired
 		}
 	}
 
@@ -455,8 +467,9 @@ public class Elevator extends SubsystemBase implements IElevator {
 	// OTHERWISE THIS IS EQUIVALENT TO MOVING TO THE DISTANCE TO THE CURRENT ZERO IN REVERSE! 
 	public void resetEncoder() {
 		//elevator.set(ControlMode.PercentOutput, 0); // we stop AND MAKE SURE WE DO NOT MOVE WHEN SETTING POSITION
-		elevator.setControl(DutyCycleOut, 0);
-		elevator.setSelectedSensorPosition(0, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // we mark the virtual zero
+		elevator.setControl(elevatorStopOut);
+		elevator.setPosition(0, TALON_TIMEOUT_MS);
+		//elevator.setSelectedSensorPosition(0, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // we mark the virtual zero
 	}
 
 }

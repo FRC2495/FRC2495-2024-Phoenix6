@@ -3,6 +3,8 @@
  */
 package frc.robot.subsystems;
 
+import javax.swing.text.Position;
+
 //import java.util.Timer;
 //import java.util.TimerTask;
 
@@ -70,6 +72,14 @@ public class Drawer extends SubsystemBase implements IDrawer {
 
 	TalonFX drawer; 
 	//BaseMotorController drawer_follower;
+
+	DutyCycleOut drawerStopOut = new DutyCycleOut(0);
+	DutyCycleOut drawerRedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
+	DutyCycleOut drawerMaxOut = new DutyCycleOut(MAX_PCT_OUTPUT);
+
+	PositionDutyCycle drawerExtendPosition = new PositionDutyCycle(-LENGTH_OF_TRAVEL_TICKS);
+	PositionDutyCycle drawerExtendMidwayPosition = new PositionDutyCycle(-LENGTH_OF_MIDWAY_TICKS);
+	PositionDutyCycle drawerHomePosition = new PositionDutyCycle(0);
 	
 	boolean isMoving;
 	boolean isExtending;
@@ -118,7 +128,7 @@ public class Drawer extends SubsystemBase implements IDrawer {
         drawer.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
         drawer.HardwareLimitSwitch.ReverseLimitEnable = true;
 		//drawer.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
-		drawer.overrideLimitSwitchesEnable(true);
+		//drawer.overrideLimitSwitchesEnable(true);
 	
 		// Motor controller output direction can be set by calling the setInverted() function as seen below.
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
@@ -147,7 +157,7 @@ public class Drawer extends SubsystemBase implements IDrawer {
  		//drawer.selectProfileSlot(SLOT_0, PRIMARY_PID_LOOP);
 		
 		// set peak output to max in case if had been reduced previously
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT);
+		setPeakOutputs(MAX_PCT_OUTPUT);
 
 	
 		// Sensors for motor controllers provide feedback about the position, velocity, and acceleration
@@ -177,7 +187,8 @@ public class Drawer extends SubsystemBase implements IDrawer {
 	public boolean tripleCheckMove() {
 		if (isMoving) {
 			
-			double error = drawer.getClosedLoopError(PRIMARY_PID_LOOP);
+			//double error = drawer.getClosedLoopError(PRIMARY_PID_LOOP);
+			double error = drawer.getClosedLoopError().getValueAsDouble();
 			
 			boolean isOnTarget = (Math.abs(error) < TICK_THRESH);
 			
@@ -252,12 +263,12 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		
 		//setPIDParameters();
 		System.out.println("Extending");
-		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
+		setPeakOutputs(REDUCED_PCT_OUTPUT);
 
-		tac = -LENGTH_OF_TRAVEL_TICKS;
+		//tac = -LENGTH_OF_TRAVEL_TICKS;
 		
 		//drawer.set(ControlMode.Position,tac);
-		drawer.setControl(PositionVoltage, tac); //TODO fix
+		drawer.setControl(drawerExtendPosition); //TODO fix
 		
 		isMoving = true;
 		isExtending = true;
@@ -270,12 +281,12 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		
 		//setPIDParameters();
 		System.out.println("Extending to Midway");
-		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
+		setPeakOutputs(REDUCED_PCT_OUTPUT);
 
-		tac = -LENGTH_OF_MIDWAY_TICKS;
+		//tac = -LENGTH_OF_MIDWAY_TICKS;
 		
 		//drawer.set(ControlMode.Position,tac);
-		drawer.setControl(PositionVoltage, tac);
+		drawer.setControl(drawerExtendMidwayPosition);
 		
 		isMoving = true;
 		isExtending = true;
@@ -288,11 +299,11 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		
 		//setPIDParameters();
 		System.out.println("Retracting");
-		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT);
+		setPeakOutputs(REDUCED_PCT_OUTPUT);
 
-		tac = 0; // adjust as needed
+		//tac = 0; // adjust as needed
 		//drawer.set(ControlMode.Position,tac);
-		drawer.setControl(PositionVoltage, tac);
+		drawer.setControl(drawerHomePosition);
 		
 		isMoving = true;
 		isExtending = false;
@@ -313,9 +324,9 @@ public class Drawer extends SubsystemBase implements IDrawer {
 
 	public synchronized void stop() {
 		//drawer.set(ControlMode.PercentOutput, 0);
-		drawer.setControl(DutyCycleOut, 0);
+		drawer.setControl(drawerStopOut);
 		
-		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
+		setPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
 		
 		isMoving = false;
 		isExtending = false;
@@ -357,6 +368,7 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		slot0Configs.kP = MOVE_PROPORTIONAL_GAIN;
 		slot0Configs.kI = MOVE_INTEGRAL_GAIN;
 		slot0Configs.kD = MOVE_DERIVATIVE_GAIN;
+		//slot0Configs.kS = SHOOT_DERIVATIVE_GAIN; //TODO change value (replacemet for nominal output)
 
 		// apply all configs, 20 ms total timeout
 		drawer.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
@@ -368,13 +380,13 @@ public class Drawer extends SubsystemBase implements IDrawer {
 	}
 	
 	// NOTE THAT THIS METHOD WILL IMPACT BOTH OPEN AND CLOSED LOOP MODES
-	public void setNominalAndPeakOutputs(double peakOutput)
+	public void setPeakOutputs(double peakOutput)
 	{
-		drawer.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
+		/*drawer.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
 		drawer.configPeakOutputReverse(-peakOutput, TALON_TIMEOUT_MS);
 		
 		drawer.configNominalOutputForward(0, TALON_TIMEOUT_MS);
-		drawer.configNominalOutputReverse(0, TALON_TIMEOUT_MS);
+		drawer.configNominalOutputReverse(0, TALON_TIMEOUT_MS);*/
 	}
 	
 	public synchronized boolean isMoving() {
@@ -412,7 +424,9 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		if (!isMoving) // if we are already doing a move we don't take over
 		{
 			//drawer.set(ControlMode.PercentOutput, +joystick.getY()); // adjust sign if desired
-			drawer.setControl(DutyCycleOut, +joystick.getY());
+			//drawer.setControl(drawerMaxOut, +joystick.getY());
+			drawer.setControl(drawerRedOut.withOutput(+joystick.getY()));
+
 		}
 	}
 
@@ -421,7 +435,7 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		if (!isMoving) // if we are already doing a move we don't take over
 		{
 			//drawer.set(ControlMode.PercentOutput, -MathUtil.applyDeadband(gamepad.getRightX(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*0.6/*0.7*/); // adjust sign if desired
-			drawer.setControl(DutyCycleOut, -MathUtil.applyDeadband(gamepad.getRightX(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*0.6/*0.7*/);
+			drawer.setControl(drawerRedOut.withOutput(-MathUtil.applyDeadband(gamepad.getRightX(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*0.6/*0.7*/));
 		}
 	}
 
@@ -430,7 +444,8 @@ public class Drawer extends SubsystemBase implements IDrawer {
 	}	
 
 	public boolean getForwardLimitSwitchState() {
-		return drawer.getSensorCollection().isFwdLimitSwitchClosed();
+		//return drawer.getSensorCollection().isFwdLimitSwitchClosed();
+		return drawer.getForwardLimit();
 	}
 
 	public boolean getReverseLimitSwitchState() {
@@ -441,8 +456,9 @@ public class Drawer extends SubsystemBase implements IDrawer {
 	// OTHERWISE THIS IS EQUIVALENT TO MOVING TO THE DISTANCE TO THE CURRENT ZERO IN REVERSE! 
 	public void resetEncoder() {
 		//drawer.set(ControlMode.PercentOutput,0); // we stop AND MAKE SURE WE DO NOT MOVE WHEN SETTING POSITION
-		drawer.setControl(DutyCycleOut, 0);
-		drawer.setSelectedSensorPosition(0, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // we mark the virtual zero
+		drawer.setControl(drawerStopOut);
+		//drawer.setSelectedSensorPosition(0, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // we mark the virtual zero
+		drawer.setPosition(0, TALON_TIMEOUT_MS);
 	}
 
 }
