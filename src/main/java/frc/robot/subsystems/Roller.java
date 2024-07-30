@@ -10,6 +10,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.PositionDutyCycle;
+import com.ctre.phoenix6.controls.VelocityDutyCycle;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -52,6 +53,8 @@ public class Roller extends SubsystemBase implements IRoller{
 	DutyCycleOut rollerReducedOut = new DutyCycleOut(-REDUCED_PCT_OUTPUT);
 	DutyCycleOut rollerMaxOut = new DutyCycleOut(-MAX_PCT_OUTPUT);
 
+	double targetVelocity_UnitsPer100ms = -ROLL_LOW_RPM * CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
+	VelocityDutyCycle rollerRollLowRpmVelocity = new VelocityDutyCycle(targetVelocity_UnitsPer100ms);
 
 	PositionDutyCycle rollerHomePosition = new PositionDutyCycle(0);
 	PositionDutyCycle rollerShortDistancePosition = new PositionDutyCycle(LENGTH_OF_SHORT_DISTANCE_TICKS);
@@ -220,7 +223,9 @@ public class Roller extends SubsystemBase implements IRoller{
 		double targetVelocity_UnitsPer100ms = -ROLL_LOW_RPM * CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
 
 		//roller.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
-		roller.setVelocity(rollerMaxOut.withOutput(targetVelocity_UnitsPer100ms));
+		//roller.setVelocity(rollerMaxOut.withOutput(targetVelocity_UnitsPer100ms));
+		roller.setControl(rollerRollLowRpmVelocity);
+		
 		
 		isRolling = true;
 		isReleasing = false;
@@ -437,7 +442,7 @@ public class Roller extends SubsystemBase implements IRoller{
 
 	// in revolutions per minute
 	public int getRpm() {
-		return (int) (roller.getVelocity(PRIMARY_PID_LOOP)*600/CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION);  // 1 min = 600 * 100 ms, 1 revolution = TICKS_PER_ROTATION ticks 
+		return (int) (roller.getVelocity((PRIMARY_PID_LOOP)*600/CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION));  // 1 min = 600 * 100 ms, 1 revolution = TICKS_PER_ROTATION ticks 
 	}
 
 	public double getTarget() {

@@ -37,6 +37,9 @@ public class Shooter extends SubsystemBase implements IShooter{
 	static final int TIMEOUT_MS = 5000;
 
 	static final int TALON_TIMEOUT_MS = 20;
+
+	private double custom_rpm = SHOOT_LOW_RPM; //TODO change value ?
+	private double presetRpm = SHOOT_HIGH_RPM; // preset rpm
 	
 	TalonFX shooterMaster; 
 
@@ -44,8 +47,15 @@ public class Shooter extends SubsystemBase implements IShooter{
 	DutyCycleOut shooterRedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
 	DutyCycleOut shooterMaxOut = new DutyCycleOut(MAX_PCT_OUTPUT);
 
-	VelocityDutyCycle shooterShootHighVelocity = new VelocityDutyCycle(SHOOT_HIGH_RPM);
-	VelocityDutyCycle shooterShootLowVelocity = new VelocityDutyCycle(SHOOT_LOW_RPM);	
+	double targetVelocity_UnitsPer100ms = SHOOT_HIGH_RPM * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
+	double targetLowVelocity_UnitsPer100ms = SHOOT_LOW_RPM * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
+	double targetCustomVelocity_UnitsPer100ms = custom_rpm * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
+	double targetPresetVelocity_UnitsPer100ms = presetRpm * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
+
+	VelocityDutyCycle shooterShootHighVelocity = new VelocityDutyCycle(targetVelocity_UnitsPer100ms);
+	VelocityDutyCycle shooterShootLowVelocity = new VelocityDutyCycle(targetLowVelocity_UnitsPer100ms);	
+	VelocityDutyCycle shooterShootCustomVelocity = new VelocityDutyCycle(targetCustomVelocity_UnitsPer100ms);	
+	VelocityDutyCycle shooterShootPresetVelocity = new VelocityDutyCycle(targetPresetVelocity_UnitsPer100ms);	
 
 	boolean isShooting;
 	
@@ -63,8 +73,6 @@ public class Shooter extends SubsystemBase implements IShooter{
 
 	static final double SHOOT_HIGH_RPM = 3500.0; // 4000.0
 	static final double SHOOT_LOW_RPM = 1500.0;
-
-	private double presetRpm = SHOOT_HIGH_RPM; // preset rpm
 
 	static final double PRESET_DELTA_RPM = 100.0; // by what we increase/decrease by default
 
@@ -132,10 +140,8 @@ public class Shooter extends SubsystemBase implements IShooter{
 		setPIDParameters();
 		setPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
 
-		double targetVelocity_UnitsPer100ms = SHOOT_HIGH_RPM * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
-
 		//shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
-		shooterMaster.setControl(shooterMaxOut.withOutput(targetVelocity_UnitsPer100ms));
+		shooterMaster.setControl(shooterShootHighVelocity);
 		
 		isShooting = true;
 	}
@@ -148,9 +154,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 		setPIDParameters();
 		setPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
 
-		double targetVelocity_UnitsPer100ms = SHOOT_LOW_RPM * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
-
-		shooterMaster.setControl(shooterMaxOut.withOutput(targetVelocity_UnitsPer100ms));
+		shooterMaster.setControl(shooterShootLowVelocity);
 		
 		isShooting = true;
 	}
@@ -160,11 +164,9 @@ public class Shooter extends SubsystemBase implements IShooter{
 
 		setPIDParameters();
 		setPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
-
-		double targetVelocity_UnitsPer100ms = custom_rpm * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
-
+		
 		//shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
-		shooterMaster.setControl(shooterMaxOut.withOutput(targetVelocity_UnitsPer100ms));
+		shooterMaster.setControl(shooterShootCustomVelocity);
 		
 		isShooting = true;
 	}
@@ -175,10 +177,8 @@ public class Shooter extends SubsystemBase implements IShooter{
 		setPIDParameters();
 		setPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
 
-		double targetVelocity_UnitsPer100ms = presetRpm * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
-
 		//shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
-		shooterMaster.setControl(shooterMaxOut.withOutput(targetVelocity_UnitsPer100ms));
+		shooterMaster.setControl(shooterShootPresetVelocity);
 		
 		isShooting = true;
 	}
