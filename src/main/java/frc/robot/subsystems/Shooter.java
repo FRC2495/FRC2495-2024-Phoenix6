@@ -3,6 +3,7 @@
  */
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.VelocityDutyCycle;
@@ -94,7 +95,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 
 		shooterMasterConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
-		shooterMaster.getConfigurator().apply(shooterMasterConfig);
+		//shooterMaster.getConfigurator().apply(shooterMasterConfig);
 
 		// Sensors for motor controllers provide feedback about the position, velocity, and acceleration
 		// of the system using that motor controller.
@@ -119,6 +120,15 @@ public class Shooter extends SubsystemBase implements IShooter{
 		
 		// set peak output to max in case if had been reduced previously
 		setPeakOutputs(MAX_PCT_OUTPUT);
+
+		StatusCode status = StatusCode.StatusCodeNotInitialized;
+        for (int i = 0; i < 5; ++i) {
+            status = shooterMaster.getConfigurator().apply(shooterMasterConfig);
+            if (status.isOK()) break;
+        }
+        if (!status.isOK()) {
+            System.out.println("Could not apply configs, error code: " + status.toString());
+        }
 	}
 	
 	/*@Override
@@ -238,19 +248,14 @@ public class Shooter extends SubsystemBase implements IShooter{
 		// The result of this multiplication is in motor output units [-1023, 1023]. This allows the robot to feed-forward using the target set-point.
 		// In order to calculate feed-forward, you will need to measure your motor's velocity at a specified percent output
 		// (preferably an output close to the intended operating range).
-			
-		var talonFXConfigs = new TalonFXConfiguration();
 
 		// set slot 0 gains and leave every other config factory-default
-		var slot0Configs = talonFXConfigs.Slot0;
-		slot0Configs.kV = SHOOT_FEED_FORWARD;
-		slot0Configs.kP = SHOOT_PROPORTIONAL_GAIN;
-		slot0Configs.kI = SHOOT_INTEGRAL_GAIN;
-		slot0Configs.kD = SHOOT_DERIVATIVE_GAIN;
+		var slot0Configs = shooterMasterConfig.Slot0;
+		slot0Configs.kV = SHOOT_FEED_FORWARD * 2048 / 1023 / 10; // https://pro.docs.ctr-electronics.com/en/latest/docs/migration/migration-guide/closed-loop-guide.html
+		slot0Configs.kP = SHOOT_PROPORTIONAL_GAIN * 2048 / 1023 / 10;
+		slot0Configs.kI = SHOOT_INTEGRAL_GAIN * 2048 / 1023 * 1000 / 10;;
+		slot0Configs.kD = SHOOT_DERIVATIVE_GAIN * 2048 / 1023 / 1000 / 10;;;
 		//slot0Configs.kS = SHOOT_DERIVATIVE_GAIN; //TODO change value
-
-		// apply all configs, 20 ms total timeout
-		shooterMaster.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
 
 		/*shooterMaster.config_kP(SLOT_0, SHOOT_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
 		shooterMaster.config_kI(SLOT_0, SHOOT_INTEGRAL_GAIN, TALON_TIMEOUT_MS);
