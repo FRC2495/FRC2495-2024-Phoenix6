@@ -9,8 +9,8 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
-import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.CANSparkLowLevel.MotorType;
+import com.revrobotics.SparkPIDController;
 import com.revrobotics.RelativeEncoder;
 
 import frc.robot.Constants.SwerveModuleConstants;
@@ -27,8 +27,8 @@ public class SwerveModule {
 	private final RelativeEncoder m_turningEncoder;
 	private final ThriftyEncoder m_turningAbsoluteEncoder;
 
-	private final SparkMaxPIDController m_drivingPIDController;
-	private final SparkMaxPIDController m_turningPIDController;
+	private final SparkPIDController m_drivingPIDController;
+	private final SparkPIDController m_turningPIDController;
 
 	private SwerveModuleState m_desiredState = new SwerveModuleState(0.0, new Rotation2d());
 
