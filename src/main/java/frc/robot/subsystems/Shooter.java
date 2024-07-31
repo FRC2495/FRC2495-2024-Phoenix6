@@ -88,9 +88,11 @@ public class Shooter extends SubsystemBase implements IShooter{
 		// Mode of operation during Neutral output may be set by using the setNeutralMode() function.
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.
-		TalonFXConfiguration shooterMaster = new TalonFXConfiguration();
+		TalonFXConfiguration shooterMasterConfig = new TalonFXConfiguration();
 
-		shooterMaster.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+		shooterMasterConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+
+		shooterMaster.getConfigurator().apply(shooterMasterConfig);
 
 		// Sensors for motor controllers provide feedback about the position, velocity, and acceleration
 		// of the system using that motor controller.
@@ -99,7 +101,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 		// CTRE Magnetic Encoder (relative/quadrature) =  4096 units per rotation
 		// FX Integrated Sensor = 2048 units per rotation
 		//shooterMaster.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS);
-		shooterMaster.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
+		shooterMasterConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
 
 		// Sensor phase is the term used to explain sensor direction.
 		// In order for limit switches and closed-loop features to function properly the sensor and motor has to be in-phase.
@@ -111,7 +113,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
 		// Only the motor leads are inverted. This feature ensures that sensor phase and limit switches will properly match the LED pattern
 		// (when LEDs are green => forward limit switch and soft limits are being checked).
-		shooterMaster.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
+		shooterMasterConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
 		
 		// set peak output to max in case if had been reduced previously
 		setPeakOutputs(MAX_PCT_OUTPUT);

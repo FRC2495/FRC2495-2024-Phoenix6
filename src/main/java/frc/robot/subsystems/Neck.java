@@ -126,13 +126,16 @@ public class Neck extends SubsystemBase implements INeck {
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.	
 
-		TalonFXConfiguration neck = new TalonFXConfiguration();
-		TalonFXConfiguration neck_follower = new TalonFXConfiguration();
+		TalonFXConfiguration neckConfig = new TalonFXConfiguration();
+		TalonFXConfiguration neck_followerConfig = new TalonFXConfiguration();
 		//neck.setNeutralMode(NeutralMode.Brake);
 		//neck_follower.setNeutralMode(NeutralMode.Brake);
 
-		neck.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-		neck_follower.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+		neck.getConfigurator().apply(neckConfig);
+		neck_follower.getConfigurator().apply(neck_followerConfig);
+
+		neckConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+		neck_followerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 		
 		// Sensor phase is the term used to explain sensor direction.
 		// In order for limit switches and closed-loop features to function properly the sensor and motor has to be in-phase.
@@ -140,17 +143,17 @@ public class Neck extends SubsystemBase implements INeck {
 		//neck.setSensorPhase(true);
 		// When using a remote sensor, you can invert the remote sensor to bring it in phase with the Talon FX.
 
-		neck.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteTalonFX;
-        neck.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
-        neck.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
-        neck.HardwareLimitSwitch.ForwardLimitEnable = true;
+		neckConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteTalonFX;
+        neckConfig.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
+        neckConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
+        neckConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
 		//drawer.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		
 		//Enable reverse limit switches
-		neck.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteTalonFX;
-        neck.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
-        neck.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
-        neck.HardwareLimitSwitch.ReverseLimitEnable = true;
+		neckConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteTalonFX;
+        neckConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
+        neckConfig.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
+        neckConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
 		//neck.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		//neck.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		//neck.overrideLimitSwitchesEnable(true);
@@ -159,17 +162,18 @@ public class Neck extends SubsystemBase implements INeck {
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
 		// Only the motor leads are inverted. This feature ensures that sensor phase and limit switches will properly match the LED pattern
 		// (when LEDs are green => forward limit switch and soft limits are being checked). 	
-		neck.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
-		neck_follower.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+		neckConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
+		neck_followerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 		//neck.setInverted(false); // invert if required
 		//neck_follower.setInverted(true);
 
 		// Motor controllers that are followers can set Status 1 and Status 2 to 255ms(max) using setStatusFramePeriod.
 		// The Follower relies on the master status frame allowing its status frame to be slowed without affecting performance.
 		// This is a useful optimization to manage CAN bus utilization.
+
 		neck_follower.getPosition().setUpdateFrequency(5);
-		neck_follower.setStatusFramePeriod(StatusFrame.Status_1_General, 255, TALON_TIMEOUT_MS);
-		neck_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);
+		/*neck_follower.setStatusFramePeriod(StatusFrame.Status_1_General, 255, TALON_TIMEOUT_MS);
+		neck_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);*/
 
 		setPIDParameters();
 		
@@ -186,7 +190,7 @@ public class Neck extends SubsystemBase implements INeck {
 		// CTRE Magnetic Encoder (relative/quadrature) =  4096 units per rotation		
 		// FX Integrated Sensor = 2048 units per rotation
 		//neck.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor,	PRIMARY_PID_LOOP, TALON_TIMEOUT_MS);
-		neck.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
+		neckConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
 
 		// this will reset the encoder automatically when at or past the reverse limit sensor
 		neck.configSetParameter(ParamEnum.eClearPositionOnLimitR, 0, 0, 0, TALON_TIMEOUT_MS);

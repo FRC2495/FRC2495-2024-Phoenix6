@@ -102,9 +102,12 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		// Mode of operation during Neutral output may be set by using the setNeutralMode() function.
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.
-		TalonFXConfiguration drawer = new TalonFXConfiguration();
+		TalonFXConfiguration drawerConfig = new TalonFXConfiguration();
+
+		drawer.getConfigurator().apply(drawerConfig);
+
 		//drawer.setNeutralMode(NeutralMode.Brake);
-		drawer.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+		drawerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 		
 		//drawer_follower.setNeutralMode(NeutralMode.Brake);
 				
@@ -116,17 +119,17 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		// When using a remote sensor, you can invert the remote sensor to bring it in phase with the Talon FX.
 		
 		//Enable forward limit switches
-		drawer.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteTalonFX;
-        drawer.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
-        drawer.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
-        drawer.HardwareLimitSwitch.ForwardLimitEnable = true;
+		drawerConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteTalonFX;
+        drawerConfig.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
+        drawerConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
+        drawerConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
 		//drawer.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		
 		//Enable reverse limit switches
-		drawer.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteTalonFX;
-        drawer.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
-        drawer.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
-        drawer.HardwareLimitSwitch.ReverseLimitEnable = true;
+		drawerConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteTalonFX;
+        drawerConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
+        drawerConfig.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
+        drawerConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
 		//drawer.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		//drawer.overrideLimitSwitchesEnable(true);
 	
@@ -134,7 +137,7 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
 		// Only the motor leads are inverted. This feature ensures that sensor phase and limit switches will properly match the LED pattern
 		// (when LEDs are green => forward limit switch and soft limits are being checked).
-		drawer.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
+		drawerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
 
 		//drawer.setInverted(false);  // TODO switch to false if required if switching to Talon FX
 		//drawer_follower.setInverted(true);  // TODO comment out if switching to Talon FX
@@ -167,7 +170,7 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		// CTRE Magnetic Encoder (relative/quadrature) =  4096 units per rotation		
 		// FX Integrated Sensor = 2048 units per rotation
 		//drawer.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // .CTRE_MagEncoder_Relative for SRX // TODO switch to FeedbackDevice.IntegratedSensor if switching to Talon FX
-		drawer.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor;
+		drawerConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor;
 		// this will reset the encoder automatically when at or past the forward limit sensor
 		drawer.configSetParameter(ParamEnum.eClearPositionOnLimitF, 1, 0, 0, TALON_TIMEOUT_MS);
 		drawer.configSetParameter(ParamEnum.eClearPositionOnLimitR, 0, 0, 0, TALON_TIMEOUT_MS);

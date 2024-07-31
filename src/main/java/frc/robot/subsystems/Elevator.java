@@ -112,11 +112,14 @@ public class Elevator extends SubsystemBase implements IElevator {
 		// Mode of operation during Neutral output may be set by using the setNeutralMode() function.
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.
-		TalonFXConfiguration elevator = new TalonFXConfiguration();
-		TalonFXConfiguration elevator_follower = new TalonFXConfiguration();
+		TalonFXConfiguration elevatorConfig = new TalonFXConfiguration();
+		TalonFXConfiguration elevator_followerConfig = new TalonFXConfiguration();
 
-		elevator.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-		elevator_follower.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+		elevator.getConfigurator().apply(elevatorConfig);
+		elevator_follower.getConfigurator().apply(elevator_followerConfig);
+
+		elevatorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+		elevator_followerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 		//elevator.setNeutralMode(NeutralMode.Brake);
 		//elevator_follower.setNeutralMode(NeutralMode.Brake);
 				
@@ -127,25 +130,25 @@ public class Elevator extends SubsystemBase implements IElevator {
 		//elevator.setSensorPhase(true); // false for SRX // TODO switch to true if required if switching to Talon FX
 		
 		//Enable forward limit switches
-		elevator.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteTalonFX;
-        elevator.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
-        elevator.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
-        elevator.HardwareLimitSwitch.ForwardLimitEnable = true;
+		elevatorConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteTalonFX;
+        elevatorConfig.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
+        elevatorConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
+        elevatorConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
 		//drawer.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		
 		//Enable reverse limit switches
-		elevator.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteTalonFX;
-        elevator.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
-        elevator.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
-        elevator.HardwareLimitSwitch.ReverseLimitEnable = true;
+		elevatorConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteTalonFX;
+        elevatorConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
+        elevatorConfig.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
+        elevatorConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
 		//elevator.overrideLimitSwitchesEnable(true);
 	
 		// Motor controller output direction can be set by calling the setInverted() function as seen below.
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
 		// Only the motor leads are inverted. This feature ensures that sensor phase and limit switches will properly match the LED pattern
 		// (when LEDs are green => forward limit switch and soft limits are being checked).
-		elevator.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
-		elevator_follower.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+		elevatorConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
+		elevator_followerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 		//elevator.setInverted(true);  // TODO switch to false if required if switching to Talon FX
 		//elevator_follower.setInverted(true);  // TODO comment out if switching to Talon FX
 		
@@ -177,7 +180,7 @@ public class Elevator extends SubsystemBase implements IElevator {
 		// FX Integrated Sensor = 2048 units per rotation
 		
 		//elevator.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // .CTRE_MagEncoder_Relative for SRX // TODO switch to FeedbackDevice.IntegratedSensor if switching to Talon FX
-		elevator.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
+		elevatorConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
 
 		// this will reset the encoder automatically when at or past the forward limit sensor
 		elevator.configSetParameter(ParamEnum.eClearPositionOnLimitF, 1, 0, 0, TALON_TIMEOUT_MS);

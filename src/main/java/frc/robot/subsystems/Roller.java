@@ -113,11 +113,14 @@ public class Roller extends SubsystemBase implements IRoller{
 		// Mode of operation during Neutral output may be set by using the setNeutralMode() function.
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.
-		TalonFXConfiguration roller = new TalonFXConfiguration();
-		TalonFXConfiguration roller_follower = new TalonFXConfiguration();
+		TalonFXConfiguration rollerConfig = new TalonFXConfiguration();
+		TalonFXConfiguration roller_followerConfig = new TalonFXConfiguration();
 
-		roller.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-		roller_follower.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+		roller.getConfigurator().apply(rollerConfig);
+		roller_follower.getConfigurator().apply(roller_followerConfig);
+
+		rollerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+		roller_followerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
 		// Sensors for motor controllers provide feedback about the position, velocity, and acceleration
 		// of the system using that motor controller.
@@ -126,7 +129,7 @@ public class Roller extends SubsystemBase implements IRoller{
 		// CTRE Magnetic Encoder (relative/quadrature) =  4096 units per rotation
 		// FX Integrated Sensor = 2048 units per rotation
 		//roller.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS);
-		roller.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
+		rollerConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
 
 		// Sensor phase is the term used to explain sensor direction.
 		// In order for limit switches and closed-loop features to function properly the sensor and motor has to be in-phase.
@@ -137,14 +140,15 @@ public class Roller extends SubsystemBase implements IRoller{
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
 		// Only the motor leads are inverted. This feature ensures that sensor phase and limit switches will properly match the LED pattern
 		// (when LEDs are green => forward limit switch and soft limits are being checked).
-		roller.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
-		roller_follower.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; 
+		rollerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
+		roller_followerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; 
 
 		// Motor controllers that are followers can set Status 1 and Status 2 to 255ms(max) using setStatusFramePeriod.
 		// The Follower relies on the master status frame allowing its status frame to be slowed without affecting performance.
 		// This is a useful optimization to manage CAN bus utilization.
-		roller_follower.setStatusFramePeriod(StatusFrame.Status_1_General, 255, TALON_TIMEOUT_MS);
-		roller_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);
+		roller_follower.getPosition().setUpdateFrequency(5);
+		/*roller_follower.setStatusFramePeriod(StatusFrame.Status_1_General, 255, TALON_TIMEOUT_MS);
+		roller_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);*/
 		
 		// set peak output to max in case if had been reduced previously
 		setPeakOutputs(MAX_PCT_OUTPUT);
