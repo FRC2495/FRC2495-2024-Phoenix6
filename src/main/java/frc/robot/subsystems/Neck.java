@@ -14,10 +14,12 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.ForwardLimitSourceValue;
 import com.ctre.phoenix6.signals.ForwardLimitTypeValue;
+import com.ctre.phoenix6.signals.ForwardLimitValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.ReverseLimitSourceValue;
 import com.ctre.phoenix6.signals.ReverseLimitTypeValue;
+import com.ctre.phoenix6.signals.ReverseLimitValue;
 
 import frc.robot.interfaces.*;
 import frc.robot.RobotContainer;
@@ -604,12 +606,13 @@ public class Neck extends SubsystemBase implements INeck {
 
 	// returns the state of the limit switch
 	public boolean getReverseLimitSwitchState() {
-		return neck.getSensorCollection().isRevLimitSwitchClosed()>0?true:false;
-		//return neck.getReverseLimit();
+		//return neck.getSensorCollection().isRevLimitSwitchClosed()>0?true:false;
+		return neck.getReverseLimit().getValue() == ReverseLimitValue.ClosedToGround;
 	}
 
 	public boolean getForwardLimitSwitchState() {
-		return neck.getSensorCollection().isFwdLimitSwitchClosed()>0?true:false;
+		//return neck.getSensorCollection().isFwdLimitSwitchClosed()>0?true:false;
+		return neck.getForwardLimit().getValue() == ForwardLimitValue.ClosedToGround;
 	}
 
 	// MAKE SURE THAT YOU ARE NOT IN A CLOSED LOOP CONTROL MODE BEFORE CALLING THIS METHOD.

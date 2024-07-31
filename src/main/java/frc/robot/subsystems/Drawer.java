@@ -24,10 +24,12 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.ForwardLimitSourceValue;
 import com.ctre.phoenix6.signals.ForwardLimitTypeValue;
+import com.ctre.phoenix6.signals.ForwardLimitValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.ReverseLimitSourceValue;
 import com.ctre.phoenix6.signals.ReverseLimitTypeValue;
+import com.ctre.phoenix6.signals.ReverseLimitValue;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Joystick;
@@ -460,11 +462,12 @@ public class Drawer extends SubsystemBase implements IDrawer {
 
 	public boolean getForwardLimitSwitchState() {
 		//return drawer.getSensorCollection().isFwdLimitSwitchClosed();
-		return drawer.getForwardLimit();
+		return drawer.getForwardLimit().getValue() == ForwardLimitValue.ClosedToGround;
 	}
 
 	public boolean getReverseLimitSwitchState() {
-		return drawer.getSensorCollection().isRevLimitSwitchClosed();
+		//return drawer.getSensorCollection().isRevLimitSwitchClosed();
+		return drawer.getReverseLimit().getValue() == ReverseLimitValue.ClosedToGround;
 	}
 
 	// MAKE SURE THAT YOU ARE NOT IN A CLOSED LOOP CONTROL MODE BEFORE CALLING THIS METHOD.
