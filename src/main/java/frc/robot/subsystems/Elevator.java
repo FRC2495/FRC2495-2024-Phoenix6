@@ -9,18 +9,10 @@ import com.ctre.phoenix6.StatusCode;
 //import java.util.TimerTask;
 
 //import com.ctre.phoenix.motorcontrol.FeedbackDevice;
-import com.ctre.phoenix6.configs.FeedbackConfigs;
-import com.ctre.phoenix6.configs.HardwareLimitSwitchConfigs;
-
-import javax.swing.text.Position;
-
-import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.PositionDutyCycle;
-import com.ctre.phoenix6.controls.PositionVoltage;
-import com.ctre.phoenix6.controls.VoltageOut;
 /*import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.StatusFrame;*/
@@ -82,8 +74,11 @@ public class Elevator extends SubsystemBase implements IElevator {
 	TalonFX elevator; 
 	TalonFX elevator_follower;
 
+	TalonFXConfiguration elevatorConfig;
+	TalonFXConfiguration elevator_followerConfig;
+
 	DutyCycleOut elevatorStopOut = new DutyCycleOut(0);
-	DutyCycleOut elevatorRedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
+	DutyCycleOut elevatorReducedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
 
 	PositionDutyCycle elevatorUpPosition = new PositionDutyCycle(-LENGTH_OF_TRAVEL_TICKS);
 	PositionDutyCycle elevatorMidwayPosition = new PositionDutyCycle(-LENGTH_OF_MIDWAY_TICKS);
@@ -116,11 +111,11 @@ public class Elevator extends SubsystemBase implements IElevator {
 		// Mode of operation during Neutral output may be set by using the setNeutralMode() function.
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.
-		TalonFXConfiguration elevatorConfig = new TalonFXConfiguration();
-		TalonFXConfiguration elevator_followerConfig = new TalonFXConfiguration();
+		elevatorConfig = new TalonFXConfiguration();
+		elevator_followerConfig = new TalonFXConfiguration();
 
-		elevator.getConfigurator().apply(elevatorConfig);
-		elevator_follower.getConfigurator().apply(elevator_followerConfig);
+		//elevator.getConfigurator().apply(elevatorConfig);
+		//elevator_follower.getConfigurator().apply(elevator_followerConfig);
 
 		elevatorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 		elevator_followerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
@@ -134,16 +129,14 @@ public class Elevator extends SubsystemBase implements IElevator {
 		//elevator.setSensorPhase(true); // false for SRX // TODO switch to true if required if switching to Talon FX
 		
 		//Enable forward limit switches
-		elevatorConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteTalonFX;
+		elevatorConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.LimitSwitchPin;
         elevatorConfig.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
-        elevatorConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
         elevatorConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
 		//drawer.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		
 		//Enable reverse limit switches
-		elevatorConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteTalonFX;
+		elevatorConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.LimitSwitchPin;
         elevatorConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
-        elevatorConfig.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
         elevatorConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
 		//elevator.overrideLimitSwitchesEnable(true);
 	
@@ -151,8 +144,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
 		// Only the motor leads are inverted. This feature ensures that sensor phase and limit switches will properly match the LED pattern
 		// (when LEDs are green => forward limit switch and soft limits are being checked).
-		elevatorConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
-		elevator_followerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+		elevatorConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive; // change value or comment out if needed
+		elevator_followerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 		//elevator.setInverted(true);  // TODO switch to false if required if switching to Talon FX
 		//elevator_follower.setInverted(true);  // TODO comment out if switching to Talon FX
 		
@@ -162,9 +155,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 		// The Follower relies on the master status frame allowing its status frame to be slowed without affecting performance.
 		// This is a useful optimization to manage CAN bus utilization.
 
-		elevator.getPosition().setUpdateFrequency(5);
 		//elevator_follower.setStatusFramePeriod(StatusFrame.Status_1_General, 255, TALON_TIMEOUT_MS);
-		elevator_follower.getPosition().setUpdateFrequency(5);
+		elevator_follower.optimizeBusUtilization();
 		//elevator_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);
 
 		setPIDParameters();
@@ -195,6 +187,14 @@ public class Elevator extends SubsystemBase implements IElevator {
 		StatusCode status = StatusCode.StatusCodeNotInitialized;
         for (int i = 0; i < 5; ++i) {
             status = elevator.getConfigurator().apply(elevatorConfig);
+            if (status.isOK()) break;
+        }
+        if (!status.isOK()) {
+            System.out.println("Could not apply configs, error code: " + status.toString());
+        }
+
+		for (int i = 0; i < 5; ++i) {
+            status = elevator_follower.getConfigurator().apply(elevator_followerConfig);
             if (status.isOK()) break;
         }
         if (!status.isOK()) {
@@ -391,18 +391,14 @@ public class Elevator extends SubsystemBase implements IElevator {
 		// In order to calculate feed-forward, you will need to measure your motor's velocity at a specified percent output
 		// (preferably an output close to the intended operating range).
 		
-		var talonFXConfigs = new TalonFXConfiguration();
 
 		// set slot 0 gains and leave every other config factory-default
-		var slot0Configs = talonFXConfigs.Slot0;
+		var slot0Configs = elevatorConfig.Slot0;
 		slot0Configs.kV = 0;
 		slot0Configs.kP = MOVE_PROPORTIONAL_GAIN;
 		slot0Configs.kI = MOVE_INTEGRAL_GAIN;
 		slot0Configs.kD = MOVE_DERIVATIVE_GAIN;
 		//slot0Configs.kS = SHOOT_DERIVATIVE_GAIN; //TODO change value
-
-		// apply all configs, 20 ms total timeout
-		elevator.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
 
 		/*elevator.config_kP(SLOT_0, MOVE_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
 		elevator.config_kI(SLOT_0, MOVE_INTEGRAL_GAIN, TALON_TIMEOUT_MS);
@@ -413,6 +409,9 @@ public class Elevator extends SubsystemBase implements IElevator {
 	// NOTE THAT THIS METHOD WILL IMPACT BOTH OPEN AND CLOSED LOOP MODES
 	public void setPeakOutputs(double peakOutput)
 	{
+		elevatorConfig.MotorOutput.PeakForwardDutyCycle = peakOutput;
+		elevatorConfig.MotorOutput.PeakReverseDutyCycle = -peakOutput;
+		
 		/*elevator.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
 		elevator.configPeakOutputReverse(-peakOutput, TALON_TIMEOUT_MS);
 		
@@ -456,7 +455,7 @@ public class Elevator extends SubsystemBase implements IElevator {
 		if (!isMoving) // if we are already doing a move we don't take over
 		{
 			//elevator.set(ControlMode.PercentOutput, -joystick.getY()); // adjust sign if desired
-			elevator.setControl(elevatorRedOut.withOutput(-joystick.getY()));
+			elevator.setControl(elevatorReducedOut.withOutput(-joystick.getY()));
 		}
 	}
 
@@ -465,7 +464,7 @@ public class Elevator extends SubsystemBase implements IElevator {
 		if (!isMoving) // if we are already doing a move we don't take over
 		{
 			//elevator.set(ControlMode.PercentOutput, +MathUtil.applyDeadband(gamepad.getLeftY(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*1.0/*0.7*/); // adjust sign if desired
-			elevator.setControl(elevatorRedOut.withOutput(+MathUtil.applyDeadband(gamepad.getLeftY(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*1.0/*0.7*/)); // adjust sign if desired
+			elevator.setControl(elevatorReducedOut.withOutput(+MathUtil.applyDeadband(gamepad.getLeftY(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*1.0/*0.7*/)); // adjust sign if desired
 		}
 	}
 

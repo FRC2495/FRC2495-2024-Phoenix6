@@ -43,6 +43,8 @@ public class Shooter extends SubsystemBase implements IShooter{
 	
 	TalonFX shooterMaster; 
 
+	TalonFXConfiguration shooterMasterConfig;
+
 	DutyCycleOut shooterStopOut = new DutyCycleOut(0);
 	DutyCycleOut shooterRedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
 	DutyCycleOut shooterMaxOut = new DutyCycleOut(MAX_PCT_OUTPUT);
@@ -88,7 +90,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 		// Mode of operation during Neutral output may be set by using the setNeutralMode() function.
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.
-		TalonFXConfiguration shooterMasterConfig = new TalonFXConfiguration();
+		shooterMasterConfig = new TalonFXConfiguration();
 
 		shooterMasterConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 

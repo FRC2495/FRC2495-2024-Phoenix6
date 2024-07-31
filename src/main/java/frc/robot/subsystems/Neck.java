@@ -91,9 +91,12 @@ public class Neck extends SubsystemBase implements INeck {
 	TalonFX neck;
 	TalonFX neck_follower;
 
+	TalonFXConfiguration neckConfig;
+	TalonFXConfiguration neck_followerConfig;
+
 	DutyCycleOut neckStopOut = new DutyCycleOut(0);
 	DutyCycleOut neckHomeOut = new DutyCycleOut(HOMING_PCT_OUTPUT);
-	DutyCycleOut neckRedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
+	DutyCycleOut neckReducedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
 
 	PositionDutyCycle neckHomePosition  = new PositionDutyCycle(0);
 	PositionDutyCycle neckAcrossFieldPosition = new PositionDutyCycle(-ANGLE_TO_ACROSS_FIELD_TICKS);
@@ -129,13 +132,13 @@ public class Neck extends SubsystemBase implements INeck {
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.	
 
-		TalonFXConfiguration neckConfig = new TalonFXConfiguration();
-		TalonFXConfiguration neck_followerConfig = new TalonFXConfiguration();
+		neckConfig = new TalonFXConfiguration();
+		neck_followerConfig = new TalonFXConfiguration();
 		//neck.setNeutralMode(NeutralMode.Brake);
 		//neck_follower.setNeutralMode(NeutralMode.Brake);
 
-		neck.getConfigurator().apply(neckConfig);
-		neck_follower.getConfigurator().apply(neck_followerConfig);
+		//neck.getConfigurator().apply(neckConfig);
+		//neck_follower.getConfigurator().apply(neck_followerConfig);
 
 		neckConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 		neck_followerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
@@ -146,16 +149,14 @@ public class Neck extends SubsystemBase implements INeck {
 		//neck.setSensorPhase(true);
 		// When using a remote sensor, you can invert the remote sensor to bring it in phase with the Talon FX.
 
-		neckConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteTalonFX;
+		neckConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.LimitSwitchPin;
         neckConfig.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
-        neckConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
         neckConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
 		//drawer.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		
 		//Enable reverse limit switches
-		neckConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteTalonFX;
+		neckConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.LimitSwitchPin;
         neckConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
-        neckConfig.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
         neckConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
 		//neck.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		//neck.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
@@ -204,6 +205,14 @@ public class Neck extends SubsystemBase implements INeck {
 		StatusCode status = StatusCode.StatusCodeNotInitialized;
         for (int i = 0; i < 5; ++i) {
             status = neck.getConfigurator().apply(neckConfig);
+            if (status.isOK()) break;
+        }
+        if (!status.isOK()) {
+            System.out.println("Could not apply configs, error code: " + status.toString());
+        }
+
+		for (int i = 0; i < 5; ++i) {
+            status = neck_follower.getConfigurator().apply(neck_followerConfig);
             if (status.isOK()) break;
         }
         if (!status.isOK()) {
@@ -369,7 +378,7 @@ public class Neck extends SubsystemBase implements INeck {
 
 		tac = encoder_ticks;
 		//neck.set(ControlMode.Position,tac);
-		neck.setControl(neckRedOut.withOutput(tac));
+		neck.setControl(neckReducedOut.withOutput(tac));
 		
 		isMoving = true;
 		isMovingUp = true;
@@ -520,18 +529,14 @@ public class Neck extends SubsystemBase implements INeck {
 		// The result of this multiplication is in motor output units [-1023, 1023]. This allows the robot to feed-forward using the target set-point.
 		// In order to calculate feed-forward, you will need to measure your motor's velocity at a specified percent output
 		// (preferably an output close to the intended operating range).
-		var talonFXConfigs = new TalonFXConfiguration();
 
 		// set slot 0 gains and leave every other config factory-default
-		var slot0Configs = talonFXConfigs.Slot0;
+		var slot0Configs = neckConfig.Slot0;
 		slot0Configs.kV = 0;
 		slot0Configs.kP = MOVE_PROPORTIONAL_GAIN;
 		slot0Configs.kI = MOVE_INTEGRAL_GAIN;
 		slot0Configs.kD = MOVE_DERIVATIVE_GAIN;
 		//slot0Configs.kS = SHOOT_DERIVATIVE_GAIN; //TODO change value
-
-		// apply all configs, 20 ms total timeout
-		neck.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
 
 		/*neck.config_kP(SLOT_0, MOVE_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
 		neck.config_kI(SLOT_0, MOVE_INTEGRAL_GAIN, TALON_TIMEOUT_MS);
@@ -541,6 +546,9 @@ public class Neck extends SubsystemBase implements INeck {
 
 	public void setPeakOutputs(double peakOutput)
 	{
+		neckConfig.MotorOutput.PeakForwardDutyCycle = peakOutput;
+		neckConfig.MotorOutput.PeakReverseDutyCycle = -peakOutput;
+		
 		/*neck.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
 		neck.configPeakOutputReverse(-peakOutput, TALON_TIMEOUT_MS);
 		
@@ -587,7 +595,7 @@ public class Neck extends SubsystemBase implements INeck {
 		if (!isMoving) // if we are already doing a move we don't take over
 		{
 			//neck.set(ControlMode.PercentOutput, -joystick.getY());
-			neck.setControl(neckRedOut.withOutput(-joystick.getY()));
+			neck.setControl(neckReducedOut.withOutput(-joystick.getY()));
 		}
 	}	
 
@@ -596,7 +604,7 @@ public class Neck extends SubsystemBase implements INeck {
 		if (!isMoving) // if we are already doing a move we don't take over
 		{
 			//neck.set(ControlMode.PercentOutput, +MathUtil.applyDeadband(gamepad.getRightY(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*0.6); // adjust sign if desired
-			neck.setControl(neckRedOut.withOutput(+MathUtil.applyDeadband(gamepad.getRightY(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*0.6)); // adjust sign if desired
+			neck.setControl(neckReducedOut.withOutput(+MathUtil.applyDeadband(gamepad.getRightY(),RobotContainer.GAMEPAD_AXIS_THRESHOLD)*0.6)); // adjust sign if desired
 		}
 	}
 
