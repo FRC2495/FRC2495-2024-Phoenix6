@@ -156,9 +156,9 @@ public class Elevator extends SubsystemBase implements IElevator {
 		// This is a useful optimization to manage CAN bus utilization.
 
 		elevator.getPosition().setUpdateFrequency(5);
-		elevator_follower.setStatusFramePeriod(StatusFrame.Status_1_General, 255, TALON_TIMEOUT_MS);
-		//elevator.getPosition().setUpdateFrequency(5);
-		elevator_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);
+		//elevator_follower.setStatusFramePeriod(StatusFrame.Status_1_General, 255, TALON_TIMEOUT_MS);
+		elevator_follower.getPosition().setUpdateFrequency(5);
+		//elevator_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);
 
 		setPIDParameters();
 		
@@ -457,6 +457,7 @@ public class Elevator extends SubsystemBase implements IElevator {
 
 	public boolean getForwardLimitSwitchState() {
 		return elevator.getSensorCollection().isFwdLimitSwitchClosed()>0?true:false;
+		return elevator.isFwdLimitSwitchClosed();
 	}
 
 	public boolean getReverseLimitSwitchState() {

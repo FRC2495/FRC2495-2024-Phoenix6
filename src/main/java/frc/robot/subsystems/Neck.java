@@ -167,6 +167,7 @@ public class Neck extends SubsystemBase implements INeck {
 		// Motor controllers that are followers can set Status 1 and Status 2 to 255ms(max) using setStatusFramePeriod.
 		// The Follower relies on the master status frame allowing its status frame to be slowed without affecting performance.
 		// This is a useful optimization to manage CAN bus utilization.
+		neck_follower.getPosition().setUpdateFrequency(5);
 		neck_follower.setStatusFramePeriod(StatusFrame.Status_1_General, 255, TALON_TIMEOUT_MS);
 		neck_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);
 
@@ -588,6 +589,7 @@ public class Neck extends SubsystemBase implements INeck {
 	// returns the state of the limit switch
 	public boolean getReverseLimitSwitchState() {
 		return neck.getSensorCollection().isRevLimitSwitchClosed()>0?true:false;
+		//return neck.getReverseLimit();
 	}
 
 	public boolean getForwardLimitSwitchState() {
