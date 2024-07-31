@@ -3,6 +3,8 @@
  */
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.StatusCode;
+
 //import java.util.Timer;
 //import java.util.TimerTask;
 
@@ -183,8 +185,19 @@ public class Elevator extends SubsystemBase implements IElevator {
 		elevatorConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
 
 		// this will reset the encoder automatically when at or past the forward limit sensor
-		elevator.configSetParameter(ParamEnum.eClearPositionOnLimitF, 1, 0, 0, TALON_TIMEOUT_MS);
-		elevator.configSetParameter(ParamEnum.eClearPositionOnLimitR, 0, 0, 0, TALON_TIMEOUT_MS);
+		/*elevator.configSetParameter(ParamEnum.eClearPositionOnLimitF, 1, 0, 0, TALON_TIMEOUT_MS);
+		elevator.configSetParameter(ParamEnum.eClearPositionOnLimitR, 0, 0, 0, TALON_TIMEOUT_MS);*/
+		elevatorConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionEnable = true;
+		elevatorConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionEnable = false;
+
+		StatusCode status = StatusCode.StatusCodeNotInitialized;
+        for (int i = 0; i < 5; ++i) {
+            status = elevator.getConfigurator().apply(elevatorConfig);
+            if (status.isOK()) break;
+        }
+        if (!status.isOK()) {
+            System.out.println("Could not apply configs, error code: " + status.toString());
+        }
 		
 		isMoving = false;
 		isMovingUp = false;

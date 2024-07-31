@@ -5,6 +5,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.Follower;
@@ -193,9 +194,20 @@ public class Neck extends SubsystemBase implements INeck {
 		neckConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
 
 		// this will reset the encoder automatically when at or past the reverse limit sensor
-		neck.configSetParameter(ParamEnum.eClearPositionOnLimitR, 0, 0, 0, TALON_TIMEOUT_MS);
-		neck.configSetParameter(ParamEnum.eClearPositionOnLimitF, 1, 0, 0, TALON_TIMEOUT_MS);		
-		
+		/*neck.configSetParameter(ParamEnum.eClearPositionOnLimitR, 0, 0, 0, TALON_TIMEOUT_MS);
+		neck.configSetParameter(ParamEnum.eClearPositionOnLimitF, 1, 0, 0, TALON_TIMEOUT_MS);*/	
+		neckConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionEnable = true;
+		neckConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionEnable = false;
+
+		StatusCode status = StatusCode.StatusCodeNotInitialized;
+        for (int i = 0; i < 5; ++i) {
+            status = neck.getConfigurator().apply(neckConfig);
+            if (status.isOK()) break;
+        }
+        if (!status.isOK()) {
+            System.out.println("Could not apply configs, error code: " + status.toString());
+        }
+
 		isMoving = false;
 		isMovingUp = false;
 		isReallyStalled = false;

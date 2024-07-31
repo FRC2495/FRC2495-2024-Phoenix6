@@ -5,6 +5,8 @@ package frc.robot.subsystems;
 
 import javax.swing.text.Position;
 
+import com.ctre.phoenix6.StatusCode;
+
 //import java.util.Timer;
 //import java.util.TimerTask;
 
@@ -119,16 +121,14 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		// When using a remote sensor, you can invert the remote sensor to bring it in phase with the Talon FX.
 		
 		//Enable forward limit switches
-		drawerConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteTalonFX;
+		drawerConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.LimitSwitchPin;
         drawerConfig.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
-        drawerConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
         drawerConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
 		//drawer.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		
 		//Enable reverse limit switches
-		drawerConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteTalonFX;
+		drawerConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.LimitSwitchPin;
         drawerConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
-        drawerConfig.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
         drawerConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
 		//drawer.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		//drawer.overrideLimitSwitchesEnable(true);
@@ -172,8 +172,20 @@ public class Drawer extends SubsystemBase implements IDrawer {
 		//drawer.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // .CTRE_MagEncoder_Relative for SRX // TODO switch to FeedbackDevice.IntegratedSensor if switching to Talon FX
 		drawerConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor;
 		// this will reset the encoder automatically when at or past the forward limit sensor
-		drawer.configSetParameter(ParamEnum.eClearPositionOnLimitF, 1, 0, 0, TALON_TIMEOUT_MS);
-		drawer.configSetParameter(ParamEnum.eClearPositionOnLimitR, 0, 0, 0, TALON_TIMEOUT_MS);
+		/*drawer.configSetParameter(ParamEnum.eClearPositionOnLimitF, 1, 0, 0, TALON_TIMEOUT_MS);
+		drawer.configSetParameter(ParamEnum.eClearPositionOnLimitR, 0, 0, 0, TALON_TIMEOUT_MS);*/
+		drawerConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionEnable = true;
+		drawerConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionEnable = false;
+
+		/* Retry config apply up to 5 times, report if failure */
+        StatusCode status = StatusCode.StatusCodeNotInitialized;
+        for (int i = 0; i < 5; ++i) {
+            status = drawer.getConfigurator().apply(drawerConfig);
+            if (status.isOK()) break;
+        }
+        if (!status.isOK()) {
+            System.out.println("Could not apply configs, error code: " + status.toString());
+        }
 		
 		isMoving = false;
 		isExtending = false;
