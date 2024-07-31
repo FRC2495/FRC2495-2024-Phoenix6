@@ -69,7 +69,7 @@ public class SimpleRoller extends SubsystemBase implements IRoller{
 		// , talon to talon, victor to victor, talon to victor, and victor to talon.
 		
 		// set peak output to max in case if had been reduced previously
-		setPeakOutputs(MAX_PCT_OUTPUT);
+		setNominalAndPeakOutputs(MAX_PCT_OUTPUT);
 	}
 	
 	/*@Override
@@ -129,7 +129,7 @@ public class SimpleRoller extends SubsystemBase implements IRoller{
 	
 		
 	// NOTE THAT THIS METHOD WILL IMPACT BOTH OPEN AND CLOSED LOOP MODES
-	public void setPeakOutputs(double peakOutput)
+	public void setNominalAndPeakOutputs(double peakOutput)
 	{
 		/*roller.configPeakOutputForward(peakOutput, SPARKMAX_TIMEOUT_MS);
 		roller.configPeakOutputReverse(-peakOutput, SPARKMAX_TIMEOUT_MS);

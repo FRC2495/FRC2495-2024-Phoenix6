@@ -28,7 +28,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 //import edu.wpi.first.wpilibj2.command.InstantCommand;
 //import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 
-//import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.ctre.phoenix6.hardware.TalonFX;
 //import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 //import com.revrobotics.CANSparkMax;
@@ -190,8 +190,8 @@ public class RobotContainer {
 	private final /*I*/Neck neck = new Neck(neck_master, neck_follower);
 
 	//private final CANSparkMax roller_master = new CANSparkMax(Ports.CAN.ROLLER, MotorType.kBrushless);
-	private final TalonFX roller_master = new TalonFX(Ports.CAN.ROLLER_MASTER);
-	private final TalonFX roller_follower = new TalonFX(Ports.CAN.ROLLER_FOLLOWER);
+	private final WPI_TalonSRX roller_master = new WPI_TalonSRX(Ports.CAN.ROLLER_MASTER);
+	private final WPI_TalonSRX roller_follower = new WPI_TalonSRX(Ports.CAN.ROLLER_FOLLOWER);
 
 	private final /*I*/Roller roller = new Roller(roller_master, roller_follower);
 

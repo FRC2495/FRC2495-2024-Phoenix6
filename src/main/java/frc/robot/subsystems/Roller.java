@@ -4,17 +4,12 @@ import edu.wpi.first.wpilibj.Joystick;
 //import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-import javax.swing.text.Position;
-
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.DutyCycleOut;
-import com.ctre.phoenix6.controls.Follower;
-import com.ctre.phoenix6.controls.PositionDutyCycle;
-import com.ctre.phoenix6.controls.VelocityDutyCycle;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
-import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix.motorcontrol.can.BaseMotorController;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.StatusFrame;
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 
 import frc.robot.interfaces.*;
 //import frc.robot.RobotContainer;
@@ -45,20 +40,9 @@ public class Roller extends SubsystemBase implements IRoller{
 	static final int RELEASE_DISTANCE_INCHES = 17;
 	static final int SHOOT_DISTANCE_INCHES = 17;
 	
-	TalonFX roller;
-	TalonFX roller_follower; 
+	WPI_TalonSRX roller;
+	BaseMotorController roller_follower; 
 		
-	DutyCycleOut rollerStopOut = new DutyCycleOut(0);
-	DutyCycleOut rollerSuperReducedOut = new DutyCycleOut(-SUPER_REDUCED_PCT_OUTPUT);
-	DutyCycleOut rollerReducedOut = new DutyCycleOut(-REDUCED_PCT_OUTPUT);
-	DutyCycleOut rollerMaxOut = new DutyCycleOut(-MAX_PCT_OUTPUT);
-
-	double targetVelocity_UnitsPer100ms = -ROLL_LOW_RPM * CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
-	VelocityDutyCycle rollerRollLowRpmVelocity = new VelocityDutyCycle(targetVelocity_UnitsPer100ms);
-
-	PositionDutyCycle rollerHomePosition = new PositionDutyCycle(0);
-	PositionDutyCycle rollerShortDistancePosition = new PositionDutyCycle(LENGTH_OF_SHORT_DISTANCE_TICKS);
-
 	boolean isMoving;
 	boolean isRolling;
 	boolean isReleasing;
@@ -96,31 +80,19 @@ public class Roller extends SubsystemBase implements IRoller{
 	static final int CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION = 4096; // units per rotation
 	
 		
-	public Roller(TalonFX roller_in, TalonFX roller_follower_in) {
+	public Roller(WPI_TalonSRX roller_in, BaseMotorController roller_follower_in) {
 		
 		roller = roller_in;
 		roller_follower = roller_follower_in; 
 
-		roller.getConfigurator().apply(new TalonFXConfiguration());
-		roller_follower.getConfigurator().apply(new TalonFXConfiguration());
-		
-		// Both the Talon SRX and Victor SPX have a follower feature that allows the motor controllers to mimic another motor controller's output.
-		// Users will still need to set the motor controller's direction, and neutral mode.
-		// The method follow() allows users to create a motor controller follower of not only the same model, but also other models
-		// , talon to talon, victor to victor, talon to victor, and victor to talon.
-		roller_follower.setControl(new Follower(roller.getDeviceID(), false));
+		roller.configFactoryDefault();
+		roller_follower.configFactoryDefault();
 		
 		// Mode of operation during Neutral output may be set by using the setNeutralMode() function.
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.
-		TalonFXConfiguration rollerConfig = new TalonFXConfiguration();
-		TalonFXConfiguration roller_followerConfig = new TalonFXConfiguration();
-
-		roller.getConfigurator().apply(rollerConfig);
-		roller_follower.getConfigurator().apply(roller_followerConfig);
-
-		rollerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-		roller_followerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+		roller.setNeutralMode(NeutralMode.Coast);
+		roller_follower.setNeutralMode(NeutralMode.Coast);
 
 		// Sensors for motor controllers provide feedback about the position, velocity, and acceleration
 		// of the system using that motor controller.
@@ -128,30 +100,34 @@ public class Roller extends SubsystemBase implements IRoller{
 		// This ensures the best resolution possible when performing closed-loops in firmware.
 		// CTRE Magnetic Encoder (relative/quadrature) =  4096 units per rotation
 		// FX Integrated Sensor = 2048 units per rotation
-		//roller.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS);
-		rollerConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
+		roller.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS);
 
 		// Sensor phase is the term used to explain sensor direction.
 		// In order for limit switches and closed-loop features to function properly the sensor and motor has to be in-phase.
 		// This means that the sensor position must move in a positive direction as the motor controller drives positive output.  
-		//roller.setSensorPhase(true); // TODO flip if needed
+		roller.setSensorPhase(true); // TODO flip if needed
 		
 		// Motor controller output direction can be set by calling the setInverted() function as seen below.
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
 		// Only the motor leads are inverted. This feature ensures that sensor phase and limit switches will properly match the LED pattern
 		// (when LEDs are green => forward limit switch and soft limits are being checked).
-		rollerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
-		roller_followerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; 
+		roller.setInverted(false);
+		roller_follower.setInverted(false);  // TODO comment out if switching to Talon FX
+
+		// Both the Talon SRX and Victor SPX have a follower feature that allows the motor controllers to mimic another motor controller's output.
+		// Users will still need to set the motor controller's direction, and neutral mode.
+		// The method follow() allows users to create a motor controller follower of not only the same model, but also other models
+		// , talon to talon, victor to victor, talon to victor, and victor to talon.
+		roller_follower.follow(roller);
 
 		// Motor controllers that are followers can set Status 1 and Status 2 to 255ms(max) using setStatusFramePeriod.
 		// The Follower relies on the master status frame allowing its status frame to be slowed without affecting performance.
 		// This is a useful optimization to manage CAN bus utilization.
-		roller_follower.getPosition().setUpdateFrequency(5);
-		/*roller_follower.setStatusFramePeriod(StatusFrame.Status_1_General, 255, TALON_TIMEOUT_MS);
-		roller_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);*/
+		roller_follower.setStatusFramePeriod(StatusFrame.Status_1_General, 255, TALON_TIMEOUT_MS);
+		roller_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);
 		
 		// set peak output to max in case if had been reduced previously
-		setPeakOutputs(MAX_PCT_OUTPUT);
+		setNominalAndPeakOutputs(MAX_PCT_OUTPUT);
 	}
 	
 	/*@Override
@@ -174,8 +150,7 @@ public class Roller extends SubsystemBase implements IRoller{
 	public boolean tripleCheckMove() {
 		if (isMoving) {
 			
-			//double error = roller.getClosedLoopError(PRIMARY_PID_LOOP);
-			double error = roller.getClosedLoopError().getValueAsDouble();
+			double error = roller.getClosedLoopError(PRIMARY_PID_LOOP);
 			
 			boolean isOnTarget = (Math.abs(error) < TICK_THRESH);
 			
@@ -210,7 +185,7 @@ public class Roller extends SubsystemBase implements IRoller{
 	public void roll() {
 		//SwitchedCamera.setUsbCamera(Ports.UsbCamera.GRASPER_CAMERA);
 
-		roller.setControl(rollerReducedOut);
+		roller.set(ControlMode.PercentOutput, -REDUCED_PCT_OUTPUT);
 		
 		isRolling = true;
 		isReleasing = false;
@@ -222,14 +197,11 @@ public class Roller extends SubsystemBase implements IRoller{
 	public void rollLowRpm() {
 
 		setPIDParameters();
-		setPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
+		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
 
 		double targetVelocity_UnitsPer100ms = -ROLL_LOW_RPM * CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
 
-		//roller.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
-		//roller.setVelocity(rollerMaxOut.withOutput(targetVelocity_UnitsPer100ms));
-		roller.setControl(rollerRollLowRpmVelocity);
-		
+		roller.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
 		
 		isRolling = true;
 		isReleasing = false;
@@ -241,8 +213,7 @@ public class Roller extends SubsystemBase implements IRoller{
 	public void release() {
 		//SwitchedCamera.setUsbCamera(Ports.UsbCamera.GRASPER_CAMERA);
 
-		//roller.set(ControlMode.PercentOutput, SUPER_REDUCED_PCT_OUTPUT);
-		roller.setControl(rollerSuperReducedOut);
+		roller.set(ControlMode.PercentOutput, SUPER_REDUCED_PCT_OUTPUT);
 		
 		isReleasing = true;
 		isRolling = false;
@@ -259,12 +230,11 @@ public class Roller extends SubsystemBase implements IRoller{
 		
 		setPIDParametersShortDistance();
 		System.out.println("Releasing");
-		setPeakOutputs(REDUCED_PCT_OUTPUT_SHORT_DISTANCE);
+		setNominalAndPeakOutputs(REDUCED_PCT_OUTPUT_SHORT_DISTANCE);
 
-		//tac = +LENGTH_OF_SHORT_DISTANCE_TICKS;
+		tac = +LENGTH_OF_SHORT_DISTANCE_TICKS;
 		
-		roller.setControl(rollerShortDistancePosition);
-		//roller.set(ControlMode.Position,tac);
+		roller.set(ControlMode.Position,tac);
 		
 		isReleasing = true;
 		isRolling = false;
@@ -277,8 +247,7 @@ public class Roller extends SubsystemBase implements IRoller{
 	public void shoot() {
 		//SwitchedCamera.setUsbCamera(Ports.UsbCamera.GRASPER_CAMERA);
 
-		//roller.set(ControlMode.PercentOutput, -MAX_PCT_OUTPUT);
-		roller.setControl(rollerMaxOut);  
+		roller.set(ControlMode.PercentOutput, -MAX_PCT_OUTPUT);
 		
 		isRolling = false;
 		isReleasing = false;
@@ -288,8 +257,7 @@ public class Roller extends SubsystemBase implements IRoller{
 	}
 	
 	public double getEncoderPosition() {
-		//return roller.getSelectedSensorPosition(PRIMARY_PID_LOOP);
-		return roller.getPosition().getValueAsDouble();
+		return roller.getSelectedSensorPosition(PRIMARY_PID_LOOP);
 	}
 
 	public double getPresetRpm()
@@ -298,8 +266,7 @@ public class Roller extends SubsystemBase implements IRoller{
 	}
 	
 	public void stop() {
-		//roller.set(ControlMode.PercentOutput, 0);
-		roller.setControl(rollerStopOut);
+		roller.set(ControlMode.PercentOutput, 0);
 		
 		isRolling = false;
 		isReleasing = false;
@@ -307,12 +274,12 @@ public class Roller extends SubsystemBase implements IRoller{
 
 		isMoving = false;
 
-		setPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
+		setNominalAndPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
 	}
 
 	public void setPIDParameters()
 	{
-		//roller.configAllowableClosedloopError(SLOT_0, TICK_PER_100MS_THRESH, TALON_TIMEOUT_MS);
+		roller.configAllowableClosedloopError(SLOT_0, TICK_PER_100MS_THRESH, TALON_TIMEOUT_MS);
 		
 		// P is the proportional gain. It modifies the closed-loop output by a proportion (the gain value)
 		// of the closed-loop error.
@@ -338,29 +305,17 @@ public class Roller extends SubsystemBase implements IRoller{
 		// The result of this multiplication is in motor output units [-1023, 1023]. This allows the robot to feed-forward using the target set-point.
 		// In order to calculate feed-forward, you will need to measure your motor's velocity at a specified percent output
 		// (preferably an output close to the intended operating range).
-
-		var talonFXConfigs = new TalonFXConfiguration();
-
-		// set slot 0 gains and leave every other config factory-default
-		var slot0Configs = talonFXConfigs.Slot0;
-		slot0Configs.kV = ROLL_FEED_FORWARD;
-		slot0Configs.kP = ROLL_PROPORTIONAL_GAIN;
-		slot0Configs.kI = ROLL_INTEGRAL_GAIN;
-		slot0Configs.kD = ROLL_DERIVATIVE_GAIN;
-
-		// apply all configs, 20 ms total timeout
-		roller.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
 			
-		/*roller.config_kP(SLOT_0, ROLL_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
+		roller.config_kP(SLOT_0, ROLL_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
 		roller.config_kI(SLOT_0, ROLL_INTEGRAL_GAIN, TALON_TIMEOUT_MS);
 		roller.config_kD(SLOT_0, ROLL_DERIVATIVE_GAIN, TALON_TIMEOUT_MS);	
-		roller.config_kF(SLOT_0, ROLL_FEED_FORWARD, TALON_TIMEOUT_MS);*/
+		roller.config_kF(SLOT_0, ROLL_FEED_FORWARD, TALON_TIMEOUT_MS);
 	}		
 
 
 	public void setPIDParametersShortDistance()
 	{
-		//roller.configAllowableClosedloopError(SLOT_0, TICK_PER_100MS_THRESH, TALON_TIMEOUT_MS);
+		roller.configAllowableClosedloopError(SLOT_0, TICK_PER_100MS_THRESH, TALON_TIMEOUT_MS);
 		
 		// P is the proportional gain. It modifies the closed-loop output by a proportion (the gain value)
 		// of the closed-loop error.
@@ -386,33 +341,21 @@ public class Roller extends SubsystemBase implements IRoller{
 		// The result of this multiplication is in motor output units [-1023, 1023]. This allows the robot to feed-forward using the target set-point.
 		// In order to calculate feed-forward, you will need to measure your motor's velocity at a specified percent output
 		// (preferably an output close to the intended operating range).
-		var talonFXConfigs = new TalonFXConfiguration();
-
-		// set slot 0 gains and leave every other config factory-default
-		var slot0Configs = talonFXConfigs.Slot0;
-		slot0Configs.kV = ROLL_FEED_FORWARD;
-		slot0Configs.kP = ROLL_PROPORTIONAL_GAIN_SHORT_DISTANCE;
-		slot0Configs.kI = ROLL_INTEGRAL_GAIN_SHORT_DISTANCE;
-		slot0Configs.kD = ROLL_DERIVATIVE_GAIN_SHORT_DISTANCE;
-		//slot0Configs.kS = SHOOT_DERIVATIVE_GAIN; //TODO change value
-
-		// apply all configs, 20 ms total timeout
-		roller.getConfigurator().apply(talonFXConfigs, TALON_TIMEOUT_MS);
-
-		/*roller.config_kP(SLOT_0, ROLL_PROPORTIONAL_GAIN_SHORT_DISTANCE, TALON_TIMEOUT_MS);
+			
+		roller.config_kP(SLOT_0, ROLL_PROPORTIONAL_GAIN_SHORT_DISTANCE, TALON_TIMEOUT_MS);
 		roller.config_kI(SLOT_0, ROLL_INTEGRAL_GAIN_SHORT_DISTANCE, TALON_TIMEOUT_MS);
 		roller.config_kD(SLOT_0, ROLL_DERIVATIVE_GAIN_SHORT_DISTANCE, TALON_TIMEOUT_MS);	
-		roller.config_kF(SLOT_0, ROLL_FEED_FORWARD, TALON_TIMEOUT_MS);*/
+		roller.config_kF(SLOT_0, ROLL_FEED_FORWARD, TALON_TIMEOUT_MS);
 	}	
 		
 	// NOTE THAT THIS METHOD WILL IMPACT BOTH OPEN AND CLOSED LOOP MODES
-	public void setPeakOutputs(double peakOutput)
+	public void setNominalAndPeakOutputs(double peakOutput)
 	{
-		/*roller.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
+		roller.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
 		roller.configPeakOutputReverse(-peakOutput, TALON_TIMEOUT_MS);
 
 		roller.configNominalOutputForward(0, TALON_TIMEOUT_MS);
-		roller.configNominalOutputReverse(0, TALON_TIMEOUT_MS);*/
+		roller.configNominalOutputReverse(0, TALON_TIMEOUT_MS);
 	}
 	
 	public boolean isRolling(){
@@ -434,19 +377,17 @@ public class Roller extends SubsystemBase implements IRoller{
 	// for debug purpose only
 	public void joystickControl(Joystick joystick)
 	{
-		//roller.set(ControlMode.PercentOutput, -joystick.getY());
-		roller.setControl(rollerReducedOut.withOutput(-joystick.getY()));
+		roller.set(ControlMode.PercentOutput, -joystick.getY());
 	}
 
 	// in units per 100 ms
 	public int getEncoderVelocity() {
-		//return (int) (roller.getSelectedSensorVelocity(PRIMARY_PID_LOOP));
-		return (int) roller.getVelocity().getValueAsDouble();
+		return (int) (roller.getSelectedSensorVelocity(PRIMARY_PID_LOOP));
 	}
 
 	// in revolutions per minute
 	public int getRpm() {
-		return (int) (roller.getVelocity().getValueAsDouble()*600/CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION);  // 1 min = 600 * 100 ms, 1 revolution = TICKS_PER_ROTATION ticks 
+		return (int) (roller.getSelectedSensorVelocity(PRIMARY_PID_LOOP)*600/CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION);  // 1 min = 600 * 100 ms, 1 revolution = TICKS_PER_ROTATION ticks 
 	}
 
 	public double getTarget() {
@@ -456,11 +397,9 @@ public class Roller extends SubsystemBase implements IRoller{
 	// MAKE SURE THAT YOU ARE NOT IN A CLOSED LOOP CONTROL MODE BEFORE CALLING THIS METHOD.
 	// OTHERWISE THIS IS EQUIVALENT TO MOVING TO THE DISTANCE TO THE CURRENT ZERO IN REVERSE! 
 	public void resetEncoder() {
-		roller.setControl(rollerStopOut); // we stop AND MAKE SURE WE DO NOT MOVE WHEN SETTING POSITION
-		//roller.setSelectedSensorPosition(0, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // we mark the virtual zero
-		roller.setPosition(0, TALON_TIMEOUT_MS);
+		roller.set(ControlMode.PercentOutput,0); // we stop AND MAKE SURE WE DO NOT MOVE WHEN SETTING POSITION
+		roller.setSelectedSensorPosition(0, PRIMARY_PID_LOOP, TALON_TIMEOUT_MS); // we mark the virtual zero
 	}
-
 }
 
 
