@@ -261,6 +261,8 @@ public class Shooter extends SubsystemBase implements IShooter{
 	// NOTE THAT THIS METHOD WILL IMPACT BOTH OPEN AND CLOSED LOOP MODES
 	public void setPeakOutputs(double peakOutput)
 	{
+		shooterMasterConfig.MotorOutput.PeakForwardDutyCycle = peakOutput;
+		shooterMasterConfig.MotorOutput.PeakReverseDutyCycle = -peakOutput;
 		/*shooterMaster.configPeakOutputForward(peakOutput, TALON_TIMEOUT_MS);
 		shooterMaster.configPeakOutputReverse(-peakOutput, TALON_TIMEOUT_MS);
 
