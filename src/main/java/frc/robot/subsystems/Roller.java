@@ -446,7 +446,7 @@ public class Roller extends SubsystemBase implements IRoller{
 
 	// in revolutions per minute
 	public int getRpm() {
-		return (int) (roller.getVelocity((PRIMARY_PID_LOOP)*600/CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION));  // 1 min = 600 * 100 ms, 1 revolution = TICKS_PER_ROTATION ticks 
+		return (int) (roller.getVelocity().getValueAsDouble()*600/CTRE_MAGNETIC_ENCODER_SENSOR_TICKS_PER_ROTATION);  // 1 min = 600 * 100 ms, 1 revolution = TICKS_PER_ROTATION ticks 
 	}
 
 	public double getTarget() {
