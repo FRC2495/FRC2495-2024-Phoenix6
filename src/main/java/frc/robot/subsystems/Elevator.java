@@ -394,10 +394,10 @@ public class Elevator extends SubsystemBase implements IElevator {
 
 		// set slot 0 gains and leave every other config factory-default
 		var slot0Configs = elevatorConfig.Slot0;
-		slot0Configs.kV = 0;
-		slot0Configs.kP = MOVE_PROPORTIONAL_GAIN;
-		slot0Configs.kI = MOVE_INTEGRAL_GAIN;
-		slot0Configs.kD = MOVE_DERIVATIVE_GAIN;
+		slot0Configs.kV = 0 * 2048 / 1023 / 10;
+		slot0Configs.kP = MOVE_PROPORTIONAL_GAIN * 2048 / 1023 / 10;
+		slot0Configs.kI = MOVE_INTEGRAL_GAIN * 2048 / 1023 * 1000 / 10;
+		slot0Configs.kD = MOVE_DERIVATIVE_GAIN * 2048 / 1023 / 1000 / 10;
 		//slot0Configs.kS = SHOOT_DERIVATIVE_GAIN; //TODO change value
 
 		/*elevator.config_kP(SLOT_0, MOVE_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
