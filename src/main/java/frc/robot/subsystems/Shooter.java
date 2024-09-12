@@ -51,16 +51,17 @@ public class Shooter extends SubsystemBase implements IShooter{
 	DutyCycleOut shooterRedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
 	DutyCycleOut shooterMaxOut = new DutyCycleOut(MAX_PCT_OUTPUT);
 
-	double targetVelocity_UnitsPer100ms = SHOOT_HIGH_RPS * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
-	double targetLowVelocity_UnitsPer100ms = SHOOT_LOW_RPS * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
-	double targetCustomVelocity_UnitsPer100ms = custom_rps * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
-	double targetPresetVelocity_UnitsPer100ms = presetRps * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
+	double targetVelocity_UnitsPer100ms = (SHOOT_HIGH_RPS * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600) * 12; // remove the * 12 if changing from velocity voltage to velocity duty cycle 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
+	double targetLowVelocity_UnitsPer100ms = (SHOOT_LOW_RPS * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600) * 12; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
+	double targetCustomVelocity_UnitsPer100ms = (custom_rps * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600) * 12; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
+	double targetPresetVelocity_UnitsPer100ms = (presetRps * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600) * 12; // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
 
 	/*VelocityDutyCycle shooterShootHighVelocity = new VelocityDutyCycle(targetVelocity_UnitsPer100ms);
 	VelocityDutyCycle shooterShootLowVelocity = new VelocityDutyCycle(targetLowVelocity_UnitsPer100ms);	
 	VelocityDutyCycle shooterShootCustomVelocity = new VelocityDutyCycle(targetCustomVelocity_UnitsPer100ms);	
 	VelocityDutyCycle shooterShootPresetVelocity = new VelocityDutyCycle(targetPresetVelocity_UnitsPer100ms);	*/
-	private final VelocityDutyCycle shooterVelocity = new VelocityDutyCycle(0);
+	//private final VelocityDutyCycle shooterVelocity = new VelocityDutyCycle(0);
+	private final VelocityVoltage shooterVelocity = new VelocityVoltage(0);
 
 	boolean isShooting;
 	
@@ -69,10 +70,10 @@ public class Shooter extends SubsystemBase implements IShooter{
 
 	static final int SLOT_0 = 0;
 
-	static final double SHOOT_PROPORTIONAL_GAIN = 0.25;
-	static final double SHOOT_INTEGRAL_GAIN = 0.001;
-	static final double SHOOT_DERIVATIVE_GAIN = 20.0;
-	static final double SHOOT_FEED_FORWARD = 1023.0/19000.0; // 1023 = Talon SRX/FX full motor output, max measured velocity ~ 16000 native units per 100ms
+	static final double SHOOT_PROPORTIONAL_GAIN = 0.05004887585532747;	// 0.25; // * 2048 / 1023 / 10 (removed conversion and used calculator instead)
+	static final double SHOOT_INTEGRAL_GAIN = 0.20019550342130987; // 0.001; // * 2048 / 1023 / 10 
+	static final double SHOOT_DERIVATIVE_GAIN = 0.004003910068426197; // 20.0; // * 2048 / 1023 / 10 
+	static final double SHOOT_FEED_FORWARD = 0.010778947315738027 ; // 1023.0/19000.0; // * 2048 / 1023 / 10 
 
 	public static final double TICK_PER_100MS_THRESH = 1;
 
@@ -124,9 +125,9 @@ public class Shooter extends SubsystemBase implements IShooter{
 		setPeakOutputs(MAX_PCT_OUTPUT);
 
 		var slot0Configs = shooterMasterConfig.Slot0;
-		slot0Configs.kV = SHOOT_FEED_FORWARD * 2048 / 1023 / 10; // https://pro.docs.ctr-electronics.com/en/latest/docs/migration/migration-guide/closed-loop-guide.html
-		slot0Configs.kP = SHOOT_PROPORTIONAL_GAIN * 2048 / 1023 / 10;
-		slot0Configs.kI = SHOOT_INTEGRAL_GAIN * 2048 / 1023 * 1000 / 10;
+		slot0Configs.kV = SHOOT_FEED_FORWARD; // https://pro.docs.ctr-electronics.com/en/latest/docs/migration/migration-guide/closed-loop-guide.html
+		slot0Configs.kP = SHOOT_PROPORTIONAL_GAIN;
+		slot0Configs.kI = SHOOT_INTEGRAL_GAIN;
 		//shooterMaster.getConfigurator().apply(shooterMasterConfig, 0.050); //uncomment out if needed
 
 		StatusCode status = StatusCode.StatusCodeNotInitialized;
