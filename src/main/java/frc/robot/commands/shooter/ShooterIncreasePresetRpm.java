@@ -21,6 +21,6 @@ public class ShooterIncreasePresetRpm extends InstantCommand {
 	@Override
 	public void initialize() {
 		//System.out.println("ShooterIncreasePresetRpm: initialize");
-		shooter.increasePresetRpm();
+		shooter.increasePresetRps();
 	}
 }
