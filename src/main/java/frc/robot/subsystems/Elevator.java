@@ -106,13 +106,15 @@ public class Elevator extends SubsystemBase implements IElevator {
 		// Users will still need to set the motor controller's direction, and neutral mode.
 		// The method follow() allows users to create a motor controller follower of not only the same model, but also other models
 		// , talon to talon, victor to victor, talon to victor, and victor to talon.
-		elevator_follower.setControl(new Follower(elevator.getDeviceID(), false));
+	
 		
 		// Mode of operation during Neutral output may be set by using the setNeutralMode() function.
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
 		// brake and coast.
 		elevatorConfig = new TalonFXConfiguration();
 		elevator_followerConfig = new TalonFXConfiguration();
+
+		elevator_follower.setControl(new Follower(elevator.getDeviceID(), false));
 
 		//elevator.getConfigurator().apply(elevatorConfig);
 		//elevator_follower.getConfigurator().apply(elevator_followerConfig);
@@ -135,9 +137,9 @@ public class Elevator extends SubsystemBase implements IElevator {
 		//drawer.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		
 		//Enable reverse limit switches
-		elevatorConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.LimitSwitchPin;
-        elevatorConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
-        elevatorConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
+		elevator_followerConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.LimitSwitchPin;
+        elevator_followerConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
+        elevator_followerConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
 		//elevator.overrideLimitSwitchesEnable(true);
 	
 		// Motor controller output direction can be set by calling the setInverted() function as seen below.
@@ -167,6 +169,7 @@ public class Elevator extends SubsystemBase implements IElevator {
 		slot0Configs.kD = MOVE_DERIVATIVE_GAIN; // * 2048 / 1023 / 1000 / 10;
 		//slot0Configs.kS = SHOOT_DERIVATIVE_GAIN; //TODO change value
 		elevator.getConfigurator().apply(slot0Configs, 0.050); // comment out if needed
+		elevator_follower.getConfigurator().apply(slot0Configs,0.050);
 		
 		// use slot 0 for closed-looping
  		//elevator.selectProfileSlot(SLOT_0, PRIMARY_PID_LOOP);

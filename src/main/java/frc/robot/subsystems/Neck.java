@@ -37,12 +37,12 @@ public class Neck extends SubsystemBase implements INeck {
 	
 	public static final double GEAR_RATIO = 3.0; // todo change if needed
 
-	public static final int ANGLE_TO_ACROSS_FIELD_TICKS = 10000;
-	public static final int ANGLE_TO_SUB_TICKS = 30000;
-	public static final int ANGLE_TO_PODIUM_TICKS = 65000;
-	public static final int ANGLE_TO_FEED_NOTE_TICKS = 65000; //85000 // used to be sp1 second note neck position 53000;
-	public static final int ANGLE_TO_MIDWAY_TICKS = 90000;
-	public static final int ANGLE_TO_TRAVEL_TICKS = 180000; // todo set proper value
+	public static final int ANGLE_TO_ACROSS_FIELD_TICKS = 10;//10000;
+	public static final int ANGLE_TO_SUB_TICKS = 15;//30000;
+	public static final int ANGLE_TO_PODIUM_TICKS = 30; //65000;
+	public static final int ANGLE_TO_FEED_NOTE_TICKS = 30; //65000; //85000 // used to be sp1 second note neck position 53000;
+	public static final int ANGLE_TO_MIDWAY_TICKS = 55; //90000;
+	public static final int ANGLE_TO_TRAVEL_TICKS = 85; //180000; // todo set proper value
 
 
 	// shoot from podium : -65000 
@@ -71,7 +71,7 @@ public class Neck extends SubsystemBase implements INeck {
 	static final double SUPER_REDUCED_PCT_OUTPUT = 0.5;
 	static final double HOMING_PCT_OUTPUT = 0.9;//0.7;//0.5;//0.3; // ~homing speed
 	
-	static final double MOVE_PROPORTIONAL_GAIN = 0.012011730205278593;	// 0.06; unconverted
+	static final double MOVE_PROPORTIONAL_GAIN = 0.06;	// 0.06; unconverted
 	static final double MOVE_INTEGRAL_GAIN = 0.0;
 	static final double MOVE_DERIVATIVE_GAIN = 0.0;
 	
