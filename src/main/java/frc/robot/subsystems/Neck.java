@@ -185,7 +185,8 @@ public class Neck extends SubsystemBase implements INeck {
 		slot0Configs.kP = MOVE_PROPORTIONAL_GAIN; //* 2048 / 1023 / 10;
 		slot0Configs.kI = MOVE_INTEGRAL_GAIN; //* 2048 / 1023 * 1000 / 10;
 		slot0Configs.kD = MOVE_DERIVATIVE_GAIN; //* 2048 / 1023 / 1000 / 10;
-		
+		neck.getConfigurator().apply(slot0Configs, 0.050); // comment out if needed
+
 		// use slot 0 for closed-looping
  		//neck.selectProfileSlot(SLOT_0, PRIMARY_PID_LOOP);
 		
