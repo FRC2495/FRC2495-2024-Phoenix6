@@ -70,7 +70,7 @@ public class Neck extends SubsystemBase implements INeck {
 	static final double SUPER_REDUCED_PCT_OUTPUT = 0.5;
 	static final double HOMING_PCT_OUTPUT = 0.9;//0.7;//0.5;//0.3; // ~homing speed
 	
-	static final double MOVE_PROPORTIONAL_GAIN = 0.06;
+	static final double MOVE_PROPORTIONAL_GAIN = 0.012011730205278593;	// 0.06; unconverted
 	static final double MOVE_INTEGRAL_GAIN = 0.0;
 	static final double MOVE_DERIVATIVE_GAIN = 0.0;
 	
@@ -119,8 +119,8 @@ public class Neck extends SubsystemBase implements INeck {
 		neck = neck_in;
 		neck_follower = neck_follower_in;
 		
-		neck.getConfigurator().apply(new TalonFXConfiguration());
-		neck_follower.getConfigurator().apply(new TalonFXConfiguration());
+		//neck.getConfigurator().apply(new TalonFXConfiguration());
+		//neck_follower.getConfigurator().apply(new TalonFXConfiguration());
 
 		// Both the Talon SRX and Victor SPX have a follower feature that allows the motor controllers to mimic another motor controller's output.
 		// Users will still need to set the motor controller's direction, and neutral mode.
@@ -179,7 +179,12 @@ public class Neck extends SubsystemBase implements INeck {
 		/*neck_follower.setStatusFramePeriod(StatusFrame.Status_1_General, 255, TALON_TIMEOUT_MS);
 		neck_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);*/
 
-		setPIDParameters();
+		//setPIDParameters();
+		var slot0Configs = neckConfig.Slot0;
+		slot0Configs.kV = 0; //* 2048 / 1023 / 10;
+		slot0Configs.kP = MOVE_PROPORTIONAL_GAIN; //* 2048 / 1023 / 10;
+		slot0Configs.kI = MOVE_INTEGRAL_GAIN; //* 2048 / 1023 * 1000 / 10;
+		slot0Configs.kD = MOVE_DERIVATIVE_GAIN; //* 2048 / 1023 / 1000 / 10;
 		
 		// use slot 0 for closed-looping
  		//neck.selectProfileSlot(SLOT_0, PRIMARY_PID_LOOP);
@@ -502,7 +507,7 @@ public class Neck extends SubsystemBase implements INeck {
 		setPeakOutputs(MAX_PCT_OUTPUT); // we undo what me might have changed
 	}	
 	
-	private void setPIDParameters() {		
+	/*private void setPIDParameters() {		
 		//neck.configAllowableClosedloopError(SLOT_0, TALON_TICK_THRESH, TALON_TIMEOUT_MS);
 		
 		// P is the proportional gain. It modifies the closed-loop output by a proportion (the gain value)
@@ -541,8 +546,8 @@ public class Neck extends SubsystemBase implements INeck {
 		/*neck.config_kP(SLOT_0, MOVE_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
 		neck.config_kI(SLOT_0, MOVE_INTEGRAL_GAIN, TALON_TIMEOUT_MS);
 		neck.config_kD(SLOT_0, MOVE_DERIVATIVE_GAIN, TALON_TIMEOUT_MS);
-		neck.config_kF(SLOT_0, 0, TALON_TIMEOUT_MS);*/
-	}
+		neck.config_kF(SLOT_0, 0, TALON_TIMEOUT_MS);
+	}*/
 
 	public void setPeakOutputs(double peakOutput)
 	{
