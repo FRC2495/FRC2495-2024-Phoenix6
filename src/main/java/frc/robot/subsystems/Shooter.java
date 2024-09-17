@@ -119,7 +119,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 		// Note: Regardless of invert value, the LEDs will blink green when positive output is requested (by robot code or firmware closed loop).
 		// Only the motor leads are inverted. This feature ensures that sensor phase and limit switches will properly match the LED pattern
 		// (when LEDs are green => forward limit switch and soft limits are being checked).
-		shooterMasterConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // change value or comment out if needed
+		shooterMasterConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive; // change value or comment out if needed
 		
 		// set peak output to max in case if had been reduced previously
 		setPeakOutputs(MAX_PCT_OUTPUT);

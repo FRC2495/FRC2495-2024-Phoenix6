@@ -5,6 +5,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
@@ -126,7 +127,6 @@ public class Neck extends SubsystemBase implements INeck {
 		// Users will still need to set the motor controller's direction, and neutral mode.
 		// The method follow() allows users to create a motor controller follower of not only the same model, but also other models
 		// , talon to talon, victor to victor, talon to victor, and victor to talon.
-		neck_follower.setControl(new Follower(neck.getDeviceID(), false));
 
 		// Mode of operation during Neutral output may be set by using the setNeutralMode() function.
 		// As of right now, there are two options when setting the neutral mode of a motor controller,
@@ -136,6 +136,8 @@ public class Neck extends SubsystemBase implements INeck {
 		neck_followerConfig = new TalonFXConfiguration();
 		//neck.setNeutralMode(NeutralMode.Brake);
 		//neck_follower.setNeutralMode(NeutralMode.Brake);
+
+		neck_follower.setControl(new Follower(neck.getDeviceID(), true)); //false
 
 		//neck.getConfigurator().apply(neckConfig);
 		//neck_follower.getConfigurator().apply(neck_followerConfig);
@@ -155,9 +157,9 @@ public class Neck extends SubsystemBase implements INeck {
 		//drawer.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		
 		//Enable reverse limit switches
-		neckConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.LimitSwitchPin;
-        neckConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
-        neckConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
+		neck_followerConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.LimitSwitchPin;
+        neck_followerConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
+        neck_followerConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
 		//neck.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		//neck.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen, TALON_TIMEOUT_MS);
 		//neck.overrideLimitSwitchesEnable(true);
@@ -186,7 +188,8 @@ public class Neck extends SubsystemBase implements INeck {
 		slot0Configs.kI = MOVE_INTEGRAL_GAIN; //* 2048 / 1023 * 1000 / 10;
 		slot0Configs.kD = MOVE_DERIVATIVE_GAIN; //* 2048 / 1023 / 1000 / 10;
 		neck.getConfigurator().apply(slot0Configs, 0.050); // comment out if needed
-
+		neck_follower.getConfigurator().apply(slot0Configs, 0.050); // comment out if needed
+		
 		// use slot 0 for closed-looping
  		//neck.selectProfileSlot(SLOT_0, PRIMARY_PID_LOOP);
 		
@@ -201,12 +204,15 @@ public class Neck extends SubsystemBase implements INeck {
 		// FX Integrated Sensor = 2048 units per rotation
 		//neck.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor,	PRIMARY_PID_LOOP, TALON_TIMEOUT_MS);
 		neckConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
+		neck_followerConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor; 
 
 		// this will reset the encoder automatically when at or past the reverse limit sensor
 		/*neck.configSetParameter(ParamEnum.eClearPositionOnLimitR, 0, 0, 0, TALON_TIMEOUT_MS);
 		neck.configSetParameter(ParamEnum.eClearPositionOnLimitF, 1, 0, 0, TALON_TIMEOUT_MS);*/	
 		neckConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionEnable = true;
 		neckConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionEnable = false;
+		neck_followerConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionEnable = true;
+		neck_followerConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionEnable = false;
 
 		StatusCode status = StatusCode.StatusCodeNotInitialized;
         for (int i = 0; i < 5; ++i) {
