@@ -59,7 +59,7 @@ public class Elevator extends SubsystemBase implements IElevator {
 	
 	static final double REDUCED_PCT_OUTPUT = 0.8; // 0.9;
 	
-	static final double MOVE_PROPORTIONAL_GAIN = 0.6; // 1.2 for SRX // TODO switch to 0.6 if required if switching to Talon FX (as encoder resolution is halved)
+	static final double MOVE_PROPORTIONAL_GAIN = 0.12011730205278592; //0.6; // 1.2 for SRX // TODO switch to 0.6 if required if switching to Talon FX (as encoder resolution is halved)
 	static final double MOVE_INTEGRAL_GAIN = 0.0;
 	static final double MOVE_DERIVATIVE_GAIN = 0.0;
 	
@@ -99,8 +99,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 		elevator = elevator_in;
 		elevator_follower = elevator_follower_in;
 
-		elevator.getConfigurator().apply(new TalonFXConfiguration());
-		elevator_follower.getConfigurator().apply(new TalonFXConfiguration());
+		//elevator.getConfigurator().apply(new TalonFXConfiguration());
+		//elevator_follower.getConfigurator().apply(new TalonFXConfiguration());
 
 		// Both the Talon SRX and Victor SPX have a follower feature that allows the motor controllers to mimic another motor controller's output.
 		// Users will still need to set the motor controller's direction, and neutral mode.
@@ -159,7 +159,14 @@ public class Elevator extends SubsystemBase implements IElevator {
 		elevator_follower.optimizeBusUtilization();
 		//elevator_follower.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 255, TALON_TIMEOUT_MS);
 
-		setPIDParameters();
+		//setPIDParameters();
+		var slot0Configs = elevatorConfig.Slot0;
+		slot0Configs.kV = 0 * 2048 / 1023 / 10;
+		slot0Configs.kP = MOVE_PROPORTIONAL_GAIN; // * 2048 / 1023 / 10;
+		slot0Configs.kI = MOVE_INTEGRAL_GAIN; // * 2048 / 1023 * 1000 / 10;
+		slot0Configs.kD = MOVE_DERIVATIVE_GAIN; // * 2048 / 1023 / 1000 / 10;
+		//slot0Configs.kS = SHOOT_DERIVATIVE_GAIN; //TODO change value
+		elevator.getConfigurator().apply(slot0Configs, 0.050); // comment out if needed
 		
 		// use slot 0 for closed-looping
  		//elevator.selectProfileSlot(SLOT_0, PRIMARY_PID_LOOP);
@@ -363,7 +370,7 @@ public class Elevator extends SubsystemBase implements IElevator {
 		isMovingUp = false;
 	}
 	
-	private void setPIDParameters() {		
+	/*private void setPIDParameters() {		
 		//elevator.configAllowableClosedloopError(SLOT_0, TALON_TICK_THRESH, TALON_TIMEOUT_MS);
 		
 		// P is the proportional gain. It modifies the closed-loop output by a proportion (the gain value)
@@ -403,8 +410,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 		/*elevator.config_kP(SLOT_0, MOVE_PROPORTIONAL_GAIN, TALON_TIMEOUT_MS);
 		elevator.config_kI(SLOT_0, MOVE_INTEGRAL_GAIN, TALON_TIMEOUT_MS);
 		elevator.config_kD(SLOT_0, MOVE_DERIVATIVE_GAIN, TALON_TIMEOUT_MS);
-		elevator.config_kF(SLOT_0, 0, TALON_TIMEOUT_MS);*/
-	}
+		elevator.config_kF(SLOT_0, 0, TALON_TIMEOUT_MS);
+	}*/
 	
 	// NOTE THAT THIS METHOD WILL IMPACT BOTH OPEN AND CLOSED LOOP MODES
 	public void setPeakOutputs(double peakOutput)
