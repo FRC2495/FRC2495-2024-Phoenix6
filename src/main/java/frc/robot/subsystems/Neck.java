@@ -387,10 +387,9 @@ public class Neck extends SubsystemBase implements INeck {
 		//System.out.println("Moving Custom");
 		
 		setPeakOutputs(REDUCED_PCT_OUTPUT);
-
-		tac = encoder_ticks;
+		
 		//neck.set(ControlMode.Position,tac);
-		neck.setControl(neckReducedOut.withOutput(tac));
+		neck.setControl(new PositionDutyCycle(encoder_ticks));
 		
 		isMoving = true;
 		isMovingUp = true;
