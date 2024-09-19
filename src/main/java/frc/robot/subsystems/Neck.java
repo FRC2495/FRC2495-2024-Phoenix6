@@ -91,6 +91,7 @@ public class Neck extends SubsystemBase implements INeck {
 		
 	double tac;
 	double encoder_ticks;
+	double magic_encoder_ticks;
 	
 	TalonFX neck;
 	TalonFX neck_follower;
@@ -110,7 +111,7 @@ public class Neck extends SubsystemBase implements INeck {
 	PositionDutyCycle neckMidwayPosition = new PositionDutyCycle(-ANGLE_TO_MIDWAY_TICKS);
 	PositionDutyCycle neckUpPosition = new PositionDutyCycle(-ANGLE_TO_TRAVEL_TICKS);
 	PositionDutyCycle neckVirtualHomePosition = new PositionDutyCycle(-VIRTUAL_HOME_OFFSET_TICKS);
-	PositionDutyCycle neckCustomPosition = new PositionDutyCycle(encoder_ticks);
+	PositionDutyCycle neckCustomPosition = new PositionDutyCycle(magic_encoder_ticks);
 
 
 	private int onTargetCount; // counter indicating how many times/iterations we were on target
