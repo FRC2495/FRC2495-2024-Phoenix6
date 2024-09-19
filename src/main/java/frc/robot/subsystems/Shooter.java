@@ -163,7 +163,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 		//shooterMaster.set(ControlMode.PercentOutput, +ALMOST_MAX_PCT_OUTPUT);
 
 		//setPIDParameters();
-		setPeakOutputs(HALF_PCT_OUTPUT); //MAX_PCT_OUTPUT //this has a global impact, so we reset in stop()
+		setPeakOutputs(MAX_PCT_OUTPUT); //MAX_PCT_OUTPUT //this has a global impact, so we reset in stop()
 
 		//shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
 		shooterMaster.setControl(shooterVelocity.withVelocity(targetVelocity_UnitsPer100ms));
