@@ -88,10 +88,6 @@ public class Neck extends SubsystemBase implements INeck {
 	boolean isMovingUp;
 	boolean isReallyStalled;
 	boolean isHoming;
-		
-	double tac;
-	double encoder_ticks;
-	double magic_encoder_ticks;
 	
 	TalonFX neck;
 	TalonFX neck_follower;
@@ -111,8 +107,8 @@ public class Neck extends SubsystemBase implements INeck {
 	PositionDutyCycle neckMidwayPosition = new PositionDutyCycle(-ANGLE_TO_MIDWAY_TICKS);
 	PositionDutyCycle neckUpPosition = new PositionDutyCycle(-ANGLE_TO_TRAVEL_TICKS);
 	PositionDutyCycle neckVirtualHomePosition = new PositionDutyCycle(-VIRTUAL_HOME_OFFSET_TICKS);
-	PositionDutyCycle neckCustomPosition = new PositionDutyCycle(magic_encoder_ticks);
-
+	
+	double tac;
 
 	private int onTargetCount; // counter indicating how many times/iterations we were on target
 	private int stalledCount; // counter indicating how many times/iterations we were stalled	
@@ -385,16 +381,16 @@ public class Neck extends SubsystemBase implements INeck {
 	}
 
 
-	public void moveCustom(double magic_encoder_ticks) {	
+	public void moveCustom(double encoder_ticks) {	
 
 		//setPIDParameters();
 		//System.out.println("Moving Custom");
 		
 		setPeakOutputs(REDUCED_PCT_OUTPUT);
 
-		//tac = encoder_ticks;
+		tac = encoder_ticks;
 		//neck.set(ControlMode.Position,tac);
-		neck.setControl(neckCustomPosition);
+		neck.setControl(neckReducedOut.withOutput(tac));
 		
 		isMoving = true;
 		isMovingUp = true;
