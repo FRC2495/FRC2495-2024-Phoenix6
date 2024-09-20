@@ -5,7 +5,6 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
@@ -37,12 +36,14 @@ public class Neck extends SubsystemBase implements INeck {
 	
 	public static final double GEAR_RATIO = 3.0; // todo change if needed
 
-	public static final int ANGLE_TO_ACROSS_FIELD_TICKS = 10;//10000;
-	public static final int ANGLE_TO_SUB_TICKS = 15;//30000;
-	public static final int ANGLE_TO_PODIUM_TICKS = 30; //65000;
-	public static final int ANGLE_TO_FEED_NOTE_TICKS = 30; //65000; //85000 // used to be sp1 second note neck position 53000;
-	public static final int ANGLE_TO_MIDWAY_TICKS = 55; //90000;
-	public static final int ANGLE_TO_TRAVEL_TICKS = 85; //180000; // todo set proper value
+	public static final int TICKS_PER_REVOLUTION = 2048;
+
+	public static final int ANGLE_TO_ACROSS_FIELD_REVS = 10000/TICKS_PER_REVOLUTION; //10; we divide by ticks per revolution to convert the ticks unit to revolutions
+	public static final int ANGLE_TO_SUB_REVS = 15;//30000;
+	public static final int ANGLE_TO_PODIUM_REVS = 65000/TICKS_PER_REVOLUTION; //30;
+	public static final int ANGLE_TO_FEED_NOTE_REVS = 65000/TICKS_PER_REVOLUTION; //30; //85000 // used to be sp1 second note neck position 53000;
+	public static final int ANGLE_TO_MIDWAY_REVS = 90000/TICKS_PER_REVOLUTION; //55; //90000;
+	public static final int ANGLE_TO_TRAVEL_REVS = 180000/TICKS_PER_REVOLUTION; //85; // todo set proper value
 
 
 	// shoot from podium : -65000 
@@ -55,12 +56,11 @@ public class Neck extends SubsystemBase implements INeck {
 	(it's used as an error margin for moving up, since we can't reliably check when it's up)
 	*/
 	static final double VIRTUAL_HOME_OFFSET_TICKS = -4000; // position of virtual home compared to physical home
+	static final double VIRTUAL_HOME_OFFSET_REVS = VIRTUAL_HOME_OFFSET_TICKS / TICKS_PER_REVOLUTION;
 	
 	static final double MAX_PCT_OUTPUT = 1.0; // ~full speed
 	
 	static final int TALON_TIMEOUT_MS = 20;
-	public static final int TICKS_PER_REVOLUTION = 2048;
-	
 	
 	// move settings
 	static final int PRIMARY_PID_LOOP = 0;
@@ -100,13 +100,13 @@ public class Neck extends SubsystemBase implements INeck {
 	DutyCycleOut neckReducedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
 
 	PositionDutyCycle neckHomePosition  = new PositionDutyCycle(0);
-	PositionDutyCycle neckAcrossFieldPosition = new PositionDutyCycle(-ANGLE_TO_ACROSS_FIELD_TICKS);
-	PositionDutyCycle neckSubPosition = new PositionDutyCycle(-ANGLE_TO_SUB_TICKS);
-	PositionDutyCycle neckPodiumPosition = new PositionDutyCycle(-ANGLE_TO_PODIUM_TICKS);
-	PositionDutyCycle neckFeedNotePosition = new PositionDutyCycle(-ANGLE_TO_FEED_NOTE_TICKS);
-	PositionDutyCycle neckMidwayPosition = new PositionDutyCycle(-ANGLE_TO_MIDWAY_TICKS);
-	PositionDutyCycle neckUpPosition = new PositionDutyCycle(-ANGLE_TO_TRAVEL_TICKS);
-	PositionDutyCycle neckVirtualHomePosition = new PositionDutyCycle(-VIRTUAL_HOME_OFFSET_TICKS);
+	PositionDutyCycle neckAcrossFieldPosition = new PositionDutyCycle(-ANGLE_TO_ACROSS_FIELD_REVS);
+	PositionDutyCycle neckSubPosition = new PositionDutyCycle(-ANGLE_TO_SUB_REVS);
+	PositionDutyCycle neckPodiumPosition = new PositionDutyCycle(-ANGLE_TO_PODIUM_REVS);
+	PositionDutyCycle neckFeedNotePosition = new PositionDutyCycle(-ANGLE_TO_FEED_NOTE_REVS);
+	PositionDutyCycle neckMidwayPosition = new PositionDutyCycle(-ANGLE_TO_MIDWAY_REVS);
+	PositionDutyCycle neckUpPosition = new PositionDutyCycle(-ANGLE_TO_TRAVEL_REVS);
+	PositionDutyCycle neckVirtualHomePosition = new PositionDutyCycle(-VIRTUAL_HOME_OFFSET_REVS);
 	
 	double tac;
 
@@ -580,11 +580,11 @@ public class Neck extends SubsystemBase implements INeck {
 	}
 	
 	public boolean isUp() {
-		return Math.abs(getEncoderPosition()) > ANGLE_TO_TRAVEL_TICKS * 2/3;
+		return Math.abs(getEncoderPosition()) > ANGLE_TO_TRAVEL_REVS * 2/3;
 	}
 	
 	public boolean isDown() {
-		return Math.abs(getEncoderPosition()) < ANGLE_TO_TRAVEL_TICKS * 1/3;
+		return Math.abs(getEncoderPosition()) < ANGLE_TO_TRAVEL_REVS * 1/3;
 	}
 	
 	public boolean isMidway() {
@@ -595,7 +595,7 @@ public class Neck extends SubsystemBase implements INeck {
 		return isUp();
 	}
 
-	// return if stalled
+	// return if stalledF
 	public boolean isStalled() {
 		return isReallyStalled;
 	}	
