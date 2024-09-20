@@ -39,7 +39,7 @@ public class Neck extends SubsystemBase implements INeck {
 	public static final int TICKS_PER_REVOLUTION = 2048;
 
 	public static final int ANGLE_TO_ACROSS_FIELD_REVS = 10000/TICKS_PER_REVOLUTION; //10; we divide by ticks per revolution to convert the ticks unit to revolutions
-	public static final int ANGLE_TO_SUB_REVS = 15;//30000;
+	public static final int ANGLE_TO_SUB_REVS = 30000/TICKS_PER_REVOLUTION; //15;
 	public static final int ANGLE_TO_PODIUM_REVS = 65000/TICKS_PER_REVOLUTION; //30;
 	public static final int ANGLE_TO_FEED_NOTE_REVS = 65000/TICKS_PER_REVOLUTION; //30; //85000 // used to be sp1 second note neck position 53000;
 	public static final int ANGLE_TO_MIDWAY_REVS = 90000/TICKS_PER_REVOLUTION; //55; //90000;
