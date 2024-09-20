@@ -79,7 +79,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 
 	//public static final double TICK_PER_100MS_THRESH = 1;
 
-	static final double SHOOT_HIGH_RPS = 20; //3500.0 / 60.0; // 4000.0
+	static final double SHOOT_HIGH_RPS = 3500.0 / 60.0; //20.0 // 4000.0
 	static final double SHOOT_LOW_RPS = 1500.0 / 60.0;
 
 	static final double PRESET_DELTA_RPS = 100.0 / 60.0; // by what we increase/decrease by default
