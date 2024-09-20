@@ -38,6 +38,8 @@ public class Shooter extends SubsystemBase implements IShooter{
 	static final int WAIT_MS = 1000;
 	static final int TIMEOUT_MS = 5000;
 
+	static final int SECONDS_PER_MINUTE = 60;
+
 	static final int TALON_TIMEOUT_MS = 20;
 
 	private double custom_rps = SHOOT_LOW_RPS; //TODO change value ?
@@ -192,7 +194,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 		
 		//shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
 		//shooterMaster.setControl(shooterShootCustomVelocity);
-		shooterMaster.setControl(shooterVelocity.withVelocity(custom_rps / 60.0));
+		shooterMaster.setControl(shooterVelocity.withVelocity(custom_rps));
 		
 		isShooting = true;
 	}
@@ -305,7 +307,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 	}
 
 	// in revolutions per minute
-	public int getRps() {
+	public int getRpm() {
 		return (int) (shooterMaster.getVelocity().getValueAsDouble()*60);  // 1 min = 600 * 100 ms, 1 revolution = TICKS_PER_ROTATION ticks 
 	}
 }
