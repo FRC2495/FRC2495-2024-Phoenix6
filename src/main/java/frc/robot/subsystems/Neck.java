@@ -76,9 +76,9 @@ public class Neck extends SubsystemBase implements INeck {
 	static final double MOVE_DERIVATIVE_GAIN = 0.0;
 	
 	//static final int TALON_TICK_THRESH = 256;
-	static final double RPS_THRESH = 1; //TICK_THRESH = 2048;	
+	static final double REV_THRESH = 1; //TICK_THRESH = 2048;	
 	//public static final double TICK_PER_100MS_THRESH = 256; // * 10 / 2048 for RPS conversion
-	public static final double ONE_RPS = 1;
+	public static final double RPS_THRESH = 1;
 	
 	private final static int MOVE_ON_TARGET_MINIMUM_COUNT= 20; // number of times/iterations we need to be on target to really be on target
 
@@ -275,7 +275,7 @@ public class Neck extends SubsystemBase implements INeck {
 			double error = neck.getClosedLoopError().getValueAsDouble();
 			//System.out.println("Neck moving error: " + Math.abs(error));
 			
-			boolean isOnTarget = (Math.abs(error) < RPS_THRESH);
+			boolean isOnTarget = (Math.abs(error) < REV_THRESH);
 			
 			if (isOnTarget) { // if we are on target in this iteration 
 				onTargetCount++; // we increase the counter
@@ -312,7 +312,7 @@ public class Neck extends SubsystemBase implements INeck {
 			
 			double velocity = getEncoderVelocity();
 			
-			boolean isStalled = (Math.abs(velocity) < ONE_RPS); //TICK_PER_100MS_THRESH
+			boolean isStalled = (Math.abs(velocity) < RPS_THRESH); //TICK_PER_100MS_THRESH
 			
 			if (isStalled) { // if we are stalled in this iteration 
 				stalledCount++; // we increase the counter

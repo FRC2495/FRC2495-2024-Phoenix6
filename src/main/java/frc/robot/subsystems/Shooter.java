@@ -308,7 +308,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 
 	// in revolutions per minute
 	public int getRpm() {
-		return (int) (shooterMaster.getVelocity().getValueAsDouble()*60);  // 1 min = 600 * 100 ms, 1 revolution = TICKS_PER_ROTATION ticks 
+		return (int) (shooterMaster.getVelocity().getValueAsDouble()*SECONDS_PER_MINUTE);  // 1 min = 600 * 100 ms, 1 revolution = TICKS_PER_ROTATION ticks 
 	}
 }
 
