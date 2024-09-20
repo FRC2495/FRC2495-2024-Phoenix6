@@ -53,10 +53,10 @@ public class Shooter extends SubsystemBase implements IShooter{
 	DutyCycleOut shooterRedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
 	DutyCycleOut shooterMaxOut = new DutyCycleOut(MAX_PCT_OUTPUT);
 
-	double targetVelocity_UnitsPer100ms = (SHOOT_HIGH_RPS * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600); // add * 12 for velocity voltage if needed
-	double targetLowVelocity_UnitsPer100ms = (SHOOT_LOW_RPS * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600); // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
-	double targetCustomVelocity_UnitsPer100ms = (custom_rps * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600); // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
-	double targetPresetVelocity_UnitsPer100ms = (presetRps * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600); // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
+	double targetVelocity = (SHOOT_HIGH_RPS); // add * 12 for velocity voltage if needed
+	double targetLowVelocity = (SHOOT_LOW_RPS); // 1 revolution = TICKS_PER_ROTATION ticks, 1 min = 600 * 100 ms
+	double targetCustomVelocity = (custom_rps); // old conversion : * FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION / 600
+	double targetPresetVelocity = (presetRps); //
 
 	/*VelocityDutyCycle shooterShootHighVelocity = new VelocityDutyCycle(targetVelocity_UnitsPer100ms);
 	VelocityDutyCycle shooterShootLowVelocity = new VelocityDutyCycle(targetLowVelocity_UnitsPer100ms);	
@@ -77,14 +77,14 @@ public class Shooter extends SubsystemBase implements IShooter{
 	static final double SHOOT_DERIVATIVE_GAIN = 0.004003910068426197; // 20.0; // * 2048 / 1023 / 10 
 	static final double SHOOT_FEED_FORWARD = 0.010778947315738027 ; // 1023.0/19000.0; // * 2048 / 1023 / 10 
 
-	public static final double TICK_PER_100MS_THRESH = 1;
+	//public static final double TICK_PER_100MS_THRESH = 1;
 
 	static final double SHOOT_HIGH_RPS = 20; //3500.0 / 60.0; // 4000.0
 	static final double SHOOT_LOW_RPS = 1500.0 / 60.0;
 
 	static final double PRESET_DELTA_RPS = 100.0 / 60.0; // by what we increase/decrease by default
 
-	static final int FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION = 2048; // units per rotation
+	//static final int FX_INTEGRATED_SENSOR_TICKS_PER_ROTATION = 2048; // units per rotation
 	
 	
 	public Shooter(TalonFX shooterMaster_in) {
@@ -168,7 +168,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 		setPeakOutputs(MAX_PCT_OUTPUT); //MAX_PCT_OUTPUT //this has a global impact, so we reset in stop()
 
 		//shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
-		shooterMaster.setControl(shooterVelocity.withVelocity(targetVelocity_UnitsPer100ms));
+		shooterMaster.setControl(shooterVelocity.withVelocity(targetVelocity));
 		
 		isShooting = true;
 	}
@@ -181,7 +181,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 		//setPIDParameters();
 		setPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
 
-		shooterMaster.setControl(shooterVelocity.withVelocity(targetLowVelocity_UnitsPer100ms));
+		shooterMaster.setControl(shooterVelocity.withVelocity(targetLowVelocity));
 		
 		isShooting = true;
 	}
@@ -206,7 +206,7 @@ public class Shooter extends SubsystemBase implements IShooter{
 		setPeakOutputs(MAX_PCT_OUTPUT); //this has a global impact, so we reset in stop()
 
 		//shooterMaster.set(ControlMode.Velocity, targetVelocity_UnitsPer100ms);
-		shooterMaster.setControl(shooterVelocity.withVelocity(targetPresetVelocity_UnitsPer100ms));
+		shooterMaster.setControl(shooterVelocity.withVelocity(targetPresetVelocity));
 		
 		isShooting = true;
 	}
