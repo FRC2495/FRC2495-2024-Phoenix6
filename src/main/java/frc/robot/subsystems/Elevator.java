@@ -68,7 +68,7 @@ public class Elevator extends SubsystemBase implements IElevator {
 	//static final double TICK_THRESH = 2048; // 512;
 	//public static final double TICK_PER_100MS_THRESH = 64; // about a tenth of a rotation per second 
 	static final double REV_THRESH = 1;
-	public static final double RPS_THRESH = 0.1;
+	public static final double RPS_THRESH = 0.3;
 	
 	private final static int MOVE_ON_TARGET_MINIMUM_COUNT= 20; // number of times/iterations we need to be on target to really be on target
 
