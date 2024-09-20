@@ -43,8 +43,9 @@ public class Elevator extends SubsystemBase implements IElevator {
 
 	
 	// general settings
-	public static final int LENGTH_OF_TRAVEL_TICKS = 900000; // 900000; // TODO adjust as needed (halve for Talon FX)
-	public static final int LENGTH_OF_MIDWAY_TICKS = 450000; // TODO adjust as needed (halve for Talon FX)
+	public static final int TICKS_PER_REVOLUTION = 2048;
+	public static final int LENGTH_OF_TRAVEL_REVS = 900000/TICKS_PER_REVOLUTION; // 900000; // TODO adjust as needed (halve for Talon FX)
+	public static final int LENGTH_OF_MIDWAY_REVS = 450000/TICKS_PER_REVOLUTION; // TODO adjust as needed (halve for Talon FX)
 
 	static final double MAX_PCT_OUTPUT = 1.0;
 	static final int WAIT_MS = 1000;
@@ -63,9 +64,11 @@ public class Elevator extends SubsystemBase implements IElevator {
 	static final double MOVE_INTEGRAL_GAIN = 0.0;
 	static final double MOVE_DERIVATIVE_GAIN = 0.0;
 	
-	static final int TALON_TICK_THRESH = 512; // 128; //256
-	static final double TICK_THRESH = 2048; // 512;
-	public static final double TICK_PER_100MS_THRESH = 64; // about a tenth of a rotation per second 
+	//static final int TALON_TICK_THRESH = 512; // 128; //256
+	//static final double TICK_THRESH = 2048; // 512;
+	//public static final double TICK_PER_100MS_THRESH = 64; // about a tenth of a rotation per second 
+	static final double REV_THRESH = 1;
+	public static final double RPS_THRESH = 0.1;
 	
 	private final static int MOVE_ON_TARGET_MINIMUM_COUNT= 20; // number of times/iterations we need to be on target to really be on target
 
@@ -80,8 +83,8 @@ public class Elevator extends SubsystemBase implements IElevator {
 	DutyCycleOut elevatorStopOut = new DutyCycleOut(0);
 	DutyCycleOut elevatorReducedOut = new DutyCycleOut(REDUCED_PCT_OUTPUT);
 
-	PositionDutyCycle elevatorUpPosition = new PositionDutyCycle(-LENGTH_OF_TRAVEL_TICKS);
-	PositionDutyCycle elevatorMidwayPosition = new PositionDutyCycle(-LENGTH_OF_MIDWAY_TICKS);
+	PositionDutyCycle elevatorUpPosition = new PositionDutyCycle(-LENGTH_OF_TRAVEL_REVS);
+	PositionDutyCycle elevatorMidwayPosition = new PositionDutyCycle(-LENGTH_OF_MIDWAY_REVS);
 	PositionDutyCycle elevatorHomePosition = new PositionDutyCycle(0);
 	
 	boolean isMoving;
@@ -229,7 +232,7 @@ public class Elevator extends SubsystemBase implements IElevator {
 			//double error = elevator.getClosedLoopError(PRIMARY_PID_LOOP);
 			double error = elevator.getClosedLoopError().getValueAsDouble();
 			
-			boolean isOnTarget = (Math.abs(error) < TICK_THRESH);
+			boolean isOnTarget = (Math.abs(error) < REV_THRESH);
 			
 			if (isOnTarget) { // if we are on target in this iteration 
 				onTargetCount++; // we increase the counter
@@ -265,7 +268,7 @@ public class Elevator extends SubsystemBase implements IElevator {
 			
 			double velocity = getEncoderVelocity();
 			
-			boolean isStalled = (Math.abs(velocity) < TICK_PER_100MS_THRESH);
+			boolean isStalled = (Math.abs(velocity) < RPS_THRESH);
 			
 			if (isStalled) { // if we are stalled in this iteration 
 				stalledCount++; // we increase the counter
@@ -439,11 +442,11 @@ public class Elevator extends SubsystemBase implements IElevator {
 	}
 
 	public boolean isUp() {
-		return Math.abs(getEncoderPosition()) > LENGTH_OF_TRAVEL_TICKS * 9/10;
+		return Math.abs(getEncoderPosition()) > LENGTH_OF_TRAVEL_REVS * 9/10;
 	}
 	
 	public boolean isDown() {
-		return Math.abs(getEncoderPosition()) < LENGTH_OF_TRAVEL_TICKS * 1/10;
+		return Math.abs(getEncoderPosition()) < LENGTH_OF_TRAVEL_REVS * 1/10;
 	}
 	
 	public boolean isMidway() {
