@@ -72,10 +72,10 @@ public class Shooter extends SubsystemBase implements IShooter{
 
 	static final int SLOT_0 = 0;
 
-	static final double SHOOT_PROPORTIONAL_GAIN = 0.05004887585532747; //0.05004887585532747;	// 0.25; // * 2048 / 1023 / 10 (removed conversion and used calculator instead)
-	static final double SHOOT_INTEGRAL_GAIN = 0.20019550342130987; //0.20019550342130987; // 0.001; // * 2048 / 1023 / 10 
-	static final double SHOOT_DERIVATIVE_GAIN = 0.004003910068426197; // 20.0; // * 2048 / 1023 / 10 
-	static final double SHOOT_FEED_FORWARD = 0.010778947315738027 ; // 1023.0/19000.0; // * 2048 / 1023 / 10 
+	static final double SHOOT_PROPORTIONAL_GAIN = 0.9; //0.05004887585532747;	// 0.25; // * 2048 / 1023 / 10 (removed conversion and used calculator instead)
+	static final double SHOOT_INTEGRAL_GAIN = 0.2; //0.20019550342130987; // 0.001; // * 2048 / 1023 / 10 
+	static final double SHOOT_DERIVATIVE_GAIN = 0.004; // 20.0; // * 2048 / 1023 / 10 
+	static final double SHOOT_FEED_FORWARD = 0.011;//0.010778947315738027 ; // 1023.0/19000.0; // * 2048 / 1023 / 10 
 
 	//public static final double TICK_PER_100MS_THRESH = 1;
 
