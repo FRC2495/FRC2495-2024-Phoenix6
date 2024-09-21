@@ -3,6 +3,8 @@ package frc.robot.auton.common;
 
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
+import frc.robot.commands.roller.RollerReleaseShortDistance;
+import frc.robot.commands.roller.RollerTimedRelease;
 import frc.robot.commands.roller.RollerTimedRoll;
 import frc.robot.commands.shooter.ShooterStop;
 import frc.robot.commands.shooter.ShooterTimedShootHighNoStop;
@@ -15,6 +17,10 @@ public class ShootNote extends SequentialCommandGroup {
 		addCommands(
 
 			new ShooterTimedShootHighNoStop(shooter, 0.5),
+
+			//new RollerReleaseShortDistance(roller),
+
+			new RollerTimedRelease(roller, .4),
 
 			new RollerTimedRoll(roller, .2),
 
