@@ -16,13 +16,13 @@ public class ShootNote extends SequentialCommandGroup {
 
 		addCommands(
 
-			new ShooterTimedShootHighNoStop(shooter, 0.5),
+			new ShooterTimedShootHighNoStop(shooter, 0.8),
 
 			//new RollerReleaseShortDistance(roller),
 
 			new RollerTimedRelease(roller, .4),
 
-			new RollerTimedRoll(roller, .2),
+			new RollerTimedRoll(roller, .4),
 
 			new ShooterStop(shooter),
 
