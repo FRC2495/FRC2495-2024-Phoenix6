@@ -153,9 +153,9 @@ public class SwerveDrivetrain extends SubsystemBase {
 
 		AutoBuilder.configureHolonomic(
             this::getPose, // Robot pose supplier
-            this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
-            this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-            this::driveRobotRelative, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+            this::resetOdometry, // Method to reset odometry (will be called if your auto has a starting pose)
+            this::getChassisSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+            this::setChassisSpeeds, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
             new HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your Constants class
                     new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
                     new PIDConstants(5.0, 0.0, 0.0), // Rotation PID constants
@@ -335,6 +335,22 @@ public class SwerveDrivetrain extends SubsystemBase {
 		m_frontRight.resetEncoders();
 		m_rearRight.resetEncoders();
 	}
+
+	public ChassisSpeeds getChassisSpeeds() {
+		return DrivetrainConstants.DRIVE_KINEMATICS.toChassisSpeeds(
+		  // supplier for chassisSpeed, order of motors need to be the same as the consumer of ChassisSpeed
+		  m_frontLeft.getState(), 
+		  m_rearLeft.getState(),
+		  m_frontRight.getState(),
+		  m_rearRight.getState()
+		  );
+	  }
+	
+	
+	public void setChassisSpeeds(ChassisSpeeds chassisSpeeds) {
+		setModuleStates(
+			DrivetrainConstants.DRIVE_KINEMATICS.toSwerveModuleStates(chassisSpeeds));
+	  }
 
 	/** Zeroes the heading of the robot. */
 	public void zeroHeading() {

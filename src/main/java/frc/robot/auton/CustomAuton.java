@@ -14,7 +14,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 
 import frc.robot.RobotContainer;
-import frc.robot.auton.PathPlannerAuton.AutonTypes;
+//import frc.robot.auton.PathPlannerAuton.AutonTypes;
 import frc.robot.auton.common.JustShootNote;
 import frc.robot.auton.sp1.*;
 import frc.robot.auton.sp2.*;
