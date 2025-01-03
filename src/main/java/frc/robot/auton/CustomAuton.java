@@ -59,7 +59,7 @@ public class CustomAuton extends SequentialCommandGroup {
 		sonarOption = sonarOption_in;
 		autonOption = autonOption_in;
 
-		switch (startPosition) {
+		/*switch (startPosition) {
 			case RobotContainer.START_POSITION_1:
 				switch (gamePiece) {
 					case RobotContainer.GAME_PIECE_1_NOTE:
@@ -458,6 +458,6 @@ public class CustomAuton extends SequentialCommandGroup {
 			}
 			
 
-		} // end switch
+		} // end switch*/
 	}
 }

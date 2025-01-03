@@ -33,6 +33,9 @@ import com.ctre.phoenix6.hardware.TalonFX;
 //import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 //import com.revrobotics.CANSparkMax;
 //import com.revrobotics.CANSparkLowLevel.MotorType;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.commands.PathPlannerAuto;
 
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -98,7 +101,7 @@ public class RobotContainer {
 
 	// choosers (for auton)
 	
-	public static final String AUTON_DO_NOTHING = "Do Nothing";
+	/*public static final String AUTON_DO_NOTHING = "Do Nothing";
 	public static final String AUTON_CUSTOM = "My Auto";
 	public static final String AUTON_SAMPLE_SWERVE = "Sample Swerve";
 	public static final String AUTON_SAMPLE_MOVE_FORWARD = "Sample Move Forward";
@@ -157,7 +160,9 @@ public class RobotContainer {
 	public static final String AUTON_OPTION_PICKUP_NOTE_AT_WING = "Pickup Note at Wing";
 	public static final String AUTON_OPTION_FEED_NOTE = "Feed Note";
 	private String autonOption;
-	private SendableChooser<String> autonOptionChooser = new SendableChooser<>();
+	private SendableChooser<String> autonOptionChooser = new SendableChooser<>();*/
+
+	private final SendableChooser<Command> autoChooser;
 
 	// sensors
 
@@ -230,9 +235,26 @@ public class RobotContainer {
 	 */
 	public RobotContainer() {
 
+		// namedcommands for PathPlanner paths
+		NamedCommands.registerCommand("Neck Home", new NeckHome(neck));
+		NamedCommands.registerCommand("Neck Move Sub", new NeckMoveSubWithStallDetection(neck));
+		NamedCommands.registerCommand("Neck Move Down", new NeckMoveDownWithStallDetection(neck));
+		NamedCommands.registerCommand("Shoot Note", new ShootNote(shooter, roller));
+		
+		NamedCommands.registerCommand("Roller Roll Until Note Sensed", new RollerRollUntilNoteSensed(roller, noteSensor, noteSensorTwo));
+		NamedCommands.registerCommand("Neck Up And Adjust to AprilTag", new MoveNeckUpReleaseNoteAndAdjustToAprilTag(neck, roller, apriltag_camera));
+		NamedCommands.registerCommand("Neck Move Optimal for Shooting", new NeckMoveOptimalPositionForShooting(neck, apriltag_camera));
+		
+		// chooser for PathPlanner
+		autoChooser = AutoBuilder.buildAutoChooser();
+		SmartDashboard.putData("Auto Chooser", autoChooser);
+
+		// puts the PathPlanner autos on the chooser and SmartDashboard
+		SmartDashboard.putData("Test", new PathPlannerAuto("SP1ThreeNote"));
+
 		// choosers (for auton)
 		
-		autonChooser.setDefaultOption("Do Nothing", AUTON_DO_NOTHING);
+		/*autonChooser.setDefaultOption("Do Nothing", AUTON_DO_NOTHING);
 		autonChooser.addOption("My Auto", AUTON_CUSTOM);
 		autonChooser.addOption("Sample Swerve", AUTON_SAMPLE_SWERVE);
 		autonChooser.addOption("Sample Move Forward", AUTON_SAMPLE_MOVE_FORWARD);
@@ -284,8 +306,7 @@ public class RobotContainer {
 		autonOptionChooser.addOption("Pickup Note At Wing", AUTON_OPTION_PICKUP_NOTE_AT_WING);
 		autonOptionChooser.addOption("Feed Note", AUTON_OPTION_FEED_NOTE);
 	
-		SmartDashboard.putData("Auton options", autonOptionChooser);
-		
+		SmartDashboard.putData("Auton options", autonOptionChooser);*/
 
 		// Configure the button bindings
 
@@ -503,7 +524,7 @@ public class RobotContainer {
 	 * @return the command to run in autonomous
 	 */
 	public Command getAutonomousCommand() {
-		autonSelected = autonChooser.getSelected();
+		/*autonSelected = autonChooser.getSelected();
 		System.out.println("Auton selected: " + autonSelected);	
 
 		gamePieceSelected = gamePieceChooser.getSelected();
@@ -525,10 +546,12 @@ public class RobotContainer {
 		System.out.println("Release chosen: " + releaseSelected);
 
 		autonOption = autonOptionChooser.getSelected();
-		System.out.println("Auton option: " + autonOption);
+		System.out.println("Auton option: " + autonOption);*/
+
+		return autoChooser.getSelected();  
 		
 
-		switch (autonSelected) {
+		/*switch (autonSelected) {
 			case AUTON_SAMPLE_SWERVE:
 				//return createSwerveControllerCommand(createExampleTrajectory());
 				//return new DrivetrainSwerveRelative(drivetrain, this, createExampleTrajectory());
@@ -555,13 +578,13 @@ public class RobotContainer {
 				return new CompletelyLeaveCommunity(drivetrain, this);
 				//break;
 
-			/*case AUTON_TEST_HARDCODED_MOVE_2:
+			case AUTON_TEST_HARDCODED_MOVE_2:
 				return new MoveInNonBumpKTurn(drivetrain, this);
-				//break;*/
+				//break;
 
 			case AUTON_TEST_TRAJECTORY_GENERATION:
 				return new TrajectoryGenerationTest(drivetrain, this, object_detection_camera, apriltag_camera);
-				//break;*/
+				//break;
 
 			case AUTON_CUSTOM:
 				return new CustomAuton(gamePieceSelected, startPosition, mainTarget, cameraOption, sonarOption, autonOption, drivetrain, this, elevator, roller, neck, shooter, object_detection_camera, apriltag_camera, noteSensor, noteSensorTwo);
@@ -575,7 +598,7 @@ public class RobotContainer {
 				// nothing
 				return null;
 				//break;
-		} // end switch
+		}*/ // end switch 
 	}
 
 	public TrajectoryConfig createFastTrajectoryConfig() {
@@ -745,7 +768,7 @@ public class RobotContainer {
 		return copilotGamepad.getHID();
 	}
 
-	public SendableChooser<String> getAutonChooser()
+	/*public SendableChooser<String> getAutonChooser()
 	{
 		return autonChooser;
 	}
@@ -783,5 +806,10 @@ public class RobotContainer {
 	public SendableChooser<String> getAutonOptionChooser()
 	{
 		return autonOptionChooser;
+	}*/
+
+	public SendableChooser<Command> getAutoChooser() 
+	{
+		return autoChooser;
 	}
 }
